@@ -4,15 +4,19 @@ Backend часть дипломного проекта образователь�
 
 Возможности проекта
 
-Платформа поддерживает:
+регистрация и авторизация пользователей через JWT
 
-регистрацию и авторизацию пользователей через JWT
+роли пользователей:
 
-роли пользователей: STUDENT, TEACHER, ADMIN
+STUDENT
 
-подачу заявки преподавателя
+TEACHER
 
-загрузку PDF-резюме
+ADMIN
+
+подача заявки преподавателя
+
+загрузка PDF-резюме
 
 автоматический анализ резюме
 
@@ -22,7 +26,7 @@ Backend часть дипломного проекта образователь�
 
 создание и управление уроками
 
-загрузку thumbnail, видео и PDF-лекций
+загрузка thumbnail, видео и PDF-лекций
 
 создание и управление квизами
 
@@ -47,8 +51,7 @@ Lombok
 Maven
 
 Архитектура проекта
-
-Основные модули:
+Основные модули
 
 auth — регистрация, вход и верификация
 
@@ -65,15 +68,25 @@ quizzes — управление тестами
 files — хранение и отдача файлов
 
 Роли и логика доступа
-
 STUDENT
-Может просматривать курсы, уроки и квизы после реализации student-side логики.
+
+Может просматривать курсы, уроки и квизы (после реализации student-side логики)
 
 TEACHER
-Может подать заявку преподавателя и после подтверждения администратором создавать курсы, уроки и квизы.
+
+Может:
+
+подать заявку преподавателя
+
+после подтверждения администратором создавать курсы, уроки и квизы
 
 ADMIN
-Может просматривать заявки преподавателей и подтверждать или отклонять их.
+
+Может:
+
+просматривать заявки преподавателей
+
+подтверждать или отклонять заявки
 
 Teacher Approval Logic
 
@@ -93,61 +106,31 @@ Teacher Approval Logic
 
 устанавливается teacherApproved = true
 
-после этого преподаватель получает доступ к созданию курсов и уроков
+после этого преподаватель может создавать курсы и уроки
 
 Автоматический анализ резюме
 
-Используется локальный rule-based модуль.
+Проект использует локальный rule-based AI module.
 
-Анализатор:
+Что делает анализатор:
 
 извлекает текст из PDF
 
 поддерживает английские и русские ключевые слова
 
-определяет образование, опыт, навыки, проекты и технические компетенции
+определяет:
 
-вычисляет aiScore, aiSummary, aiStrengths, aiWeaknesses, aiRecommendation
+образование
 
-Причины использования локального модуля:
+преподавательский опыт
 
-отсутствие зависимости от внешних API
+навыки
 
-простота тестирования
+проекты
 
-автономная работа системы
+технические компетенции
 
-Структура данных
-
-User:
-
-id
-
-email
-
-password
-
-role
-
-teacherApproved
-
-TeacherApplication:
-
-userId
-
-fullName
-
-email
-
-resumeText
-
-resumeFileName
-
-resumeFileUrl
-
-specialization
-
-yearsOfExperience
+Вычисляет:
 
 aiScore
 
@@ -159,98 +142,81 @@ aiWeaknesses
 
 aiRecommendation
 
+Почему локальный AI:
+
+нет зависимости от внешних API
+
+проще разработка и тестирование
+
+работает оффлайн
+
+Структура данных
+User
+id
+email
+password
+role
+teacherApproved
+TeacherApplication
+userId
+fullName
+email
+resumeText
+resumeFileName
+resumeFileUrl
+specialization
+yearsOfExperience
+aiScore
+aiSummary
+aiStrengths
+aiWeaknesses
+aiRecommendation
 status
-
 reviewComment
-
 createdAt
-
-Course:
-
+Course
 id
-
 title
-
 description
-
 teacherId
-
 category
-
 level
-
 thumbnail
-
 published
-
 createdAt
-
 updatedAt
-
-Lesson:
-
+Lesson
 id
-
 courseId
-
 title
-
 description
-
 orderIndex
-
 duration
-
 videoUrl
-
 videoFileName
-
 lectureText
-
 lecturePdfUrl
-
 lecturePdfFileName
-
 published
-
 createdAt
-
 updatedAt
-
-Quiz:
-
+Quiz
 id
-
 lessonId
-
 title
-
 questions
-
 published
-
 createdAt
-
 updatedAt
-
-QuizQuestion:
-
+QuizQuestion
 question
-
 options
-
 correctAnswerIndex
-
 Настройка проекта
-
-Клонирование:
-
+1. Клонирование
 git clone https://github.com/uuuuuu-ops/Diplom
-
 cd Diplom
-
-Настройка application.properties:
-
+2. Настройка MongoDB
 spring.application.name=Diplom
 server.port=8080
 
@@ -268,61 +234,52 @@ jwt.expiration=86400000
 logging.level.org.springframework.security=DEBUG
 logging.level.org.springframework.web=INFO
 logging.level.com.diploma.Diplom=DEBUG
-
 Endpoints
-
 AUTH
 POST /auth/register
 POST /auth/login
 POST /auth/verify
-
 TEACHER APPLICATIONS
 POST /teacher-applications
 GET /teacher-applications
 GET /teacher-applications/pending
 POST /teacher-applications/{applicationId}/approve
 POST /teacher-applications/{applicationId}/reject
-
 COURSES
 POST /courses
 GET /courses/my
 GET /courses/{courseId}
 PUT /courses/{courseId}
 DELETE /courses/{courseId}
-
 LESSONS
 POST /lessons/course/{courseId}
 GET /lessons/course/{courseId}
 GET /lessons/{lessonId}
 PUT /lessons/{lessonId}
 DELETE /lessons/{lessonId}
-
 QUIZZES
 POST /quizzes/lesson/{lessonId}
 GET /quizzes/lesson/{lessonId}
 GET /quizzes/{quizId}
 PUT /quizzes/{quizId}
 DELETE /quizzes/{quizId}
-
 FILES
 GET /files?path=...
-
 Тестирование через Postman
-
-Авторизация:
-
+Авторизация
 POST /auth/login
 
-После получения JWT необходимо добавлять заголовок:
+Добавить заголовок:
 
 Authorization: Bearer YOUR_TOKEN
+Создание
 
-Создание курса и урока выполняется через form-data.
-Создание квиза — через raw JSON.
+курс и урок → form-data
+
+квиз → raw JSON
 
 Возможные ошибки
-
-403 Forbidden:
+403 Forbidden
 
 отсутствует JWT токен
 
@@ -330,7 +287,7 @@ Authorization: Bearer YOUR_TOKEN
 
 teacherApproved = false
 
-400 Bad Request:
+400 Bad Request
 
 отсутствуют обязательные поля
 
@@ -338,17 +295,15 @@ teacherApproved = false
 
 ошибки в JSON
 
-Lesson not found / Course not found:
+Ошибки данных
 
-проверь правильность ID
+Lesson not found
 
-Quiz already exists for this lesson:
+Course not found
 
-у урока уже есть квиз
+Quiz already exists for this lesson
 
 Безопасность
-
-Реализовано:
 
 JWT authentication
 
@@ -370,7 +325,7 @@ role-based authorization
 
 Дальнейшее развитие
 
-регистрация студентов на курсы
+student enrollment
 
 прохождение уроков
 
