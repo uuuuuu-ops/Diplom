@@ -1,157 +1,123 @@
-Diplom LMS Backend
+# 🚀 Diplom LMS Backend
 
-Backend часть дипломного проекта образовательной платформы. Система реализует управление пользователями, курсами, уроками, тестами и заявками преподавателей с автоматическим анализом резюме.
+> Backend часть дипломного проекта LMS (Learning Management System)  
+> Полноценная серверная архитектура для образовательной платформы с ролями, курсами, уроками и AI-анализом резюме.
 
-Возможности проекта
+---
 
-регистрация и авторизация пользователей через JWT
+## 🧩 Features
 
-роли пользователей:
+- 🔐 JWT Authentication & Authorization
+- 👥 Role-based Access (`STUDENT`, `TEACHER`, `ADMIN`)
+- 📄 Teacher Application System
+- 🤖 AI Resume Analysis (local, no external API)
+- 📚 Course Management
+- 🎥 Lesson Management (video + PDF)
+- 📝 Quiz System
+- 📁 File Upload & Serving
+- 🛡️ Secure Resource Ownership Validation
 
-STUDENT
+---
 
-TEACHER
+## 🏗️ Architecture
 
-ADMIN
 
-подача заявки преподавателя
+src/main/java/com/diploma/Diplom
+│
+├── controller # REST endpoints
+├── service # business logic
+├── repository # MongoDB access layer
+├── model # entities
+├── dto # request/response objects
+├── security # JWT, filters, config
+├── auth # authentication logic
+├── ai # resume analysis module
+└── files # file handling
 
-загрузка PDF-резюме
 
-автоматический анализ резюме
+---
 
-подтверждение преподавателя администратором
+## ⚙️ Tech Stack
 
-создание и управление курсами
+| Category        | Technology |
+|----------------|----------|
+| Backend        | Java, Spring Boot |
+| Security       | Spring Security, JWT |
+| Database       | MongoDB |
+| File Handling  | Apache PDFBox |
+| Build Tool     | Maven |
+| Utilities      | Lombok |
 
-создание и управление уроками
+---
 
-загрузка thumbnail, видео и PDF-лекций
+## 👥 Roles & Permissions
 
-создание и управление квизами
+### STUDENT
+- View courses, lessons and quizzes *(planned)*
 
-просмотр загруженных файлов через браузер
+### TEACHER
+- Submit application
+- Create content after approval:
+  - courses
+  - lessons
+  - quizzes
 
-Технологии
+### ADMIN
+- Review teacher applications
+- Approve or reject teachers
 
-Java
+---
 
-Spring Boot
+## 🔄 Teacher Approval Workflow
 
-Spring Security
 
-JWT
+Register as TEACHER
+↓
+Submit application
+↓
+Upload resume (PDF)
+↓
+AI analysis
+↓
+Admin review
+↓
+teacherApproved = true
+↓
+Access to course creation
 
-MongoDB
 
-Apache PDFBox
+---
 
-Lombok
+## 🤖 AI Resume Analysis
 
-Maven
+Local rule-based module:
 
-Архитектура проекта
-Основные модули
+### 🔍 Extracts
+- education
+- teaching experience
+- skills
+- projects
+- technical stack
 
-auth — регистрация, вход и верификация
+### 📊 Generates
+- aiScore
+- aiSummary
+- aiStrengths
+- aiWeaknesses
+- aiRecommendation
 
-security — JWT-фильтр и конфигурация безопасности
+### ✅ Why Local AI
+- no external API dependency
+- faster development
+- works offline
+- no cost
 
-teacher-applications — заявки преподавателей и анализ резюме
+---
 
-courses — управление курсами
+## 🧱 Data Models
 
-lessons — управление уроками
-
-quizzes — управление тестами
-
-files — хранение и отдача файлов
-
-Роли и логика доступа
-STUDENT
-
-Может просматривать курсы, уроки и квизы (после реализации student-side логики)
-
-TEACHER
-
-Может:
-
-подать заявку преподавателя
-
-после подтверждения администратором создавать курсы, уроки и квизы
-
-ADMIN
-
-Может:
-
-просматривать заявки преподавателей
-
-подтверждать или отклонять заявки
-
-Teacher Approval Logic
-
-Пользователь с ролью TEACHER не может сразу создавать курсы.
-
-Процесс:
-
-пользователь регистрируется как TEACHER
-
-подаёт заявку преподавателя
-
-загружает PDF-резюме
-
-система анализирует резюме
-
-администратор подтверждает заявку
-
-устанавливается teacherApproved = true
-
-после этого преподаватель может создавать курсы и уроки
-
-Автоматический анализ резюме
-
-Проект использует локальный rule-based AI module.
-
-Что делает анализатор:
-
-извлекает текст из PDF
-
-поддерживает английские и русские ключевые слова
-
-определяет:
-
-образование
-
-преподавательский опыт
-
-навыки
-
-проекты
-
-технические компетенции
-
-Вычисляет:
-
-aiScore
-
-aiSummary
-
-aiStrengths
-
-aiWeaknesses
-
-aiRecommendation
-
-Почему локальный AI:
-
-нет зависимости от внешних API
-
-проще разработка и тестирование
-
-работает оффлайн
-
-Структура данных
-User
+### User
+```text
 id
 email
 password
@@ -208,19 +174,15 @@ questions
 published
 createdAt
 updatedAt
-QuizQuestion
-question
-options
-correctAnswerIndex
-Настройка проекта
-1. Клонирование
+🚀 Getting Started
+1. Clone repository
 git clone https://github.com/uuuuuu-ops/Diplom
 cd Diplom
-2. Настройка MongoDB
+2. Configure MongoDB
+spring.data.mongodb.uri=mongodb://localhost:27017/diplom
+3. Configure application.properties
 spring.application.name=Diplom
 server.port=8080
-
-spring.data.mongodb.uri=mongodb://localhost:27017/diplom
 
 spring.servlet.multipart.enabled=true
 spring.servlet.multipart.max-file-size=500MB
@@ -230,123 +192,106 @@ app.upload.dir=uploads
 
 jwt.secret=MySuperSecretKeyForJwtToken123456789
 jwt.expiration=86400000
-
-logging.level.org.springframework.security=DEBUG
-logging.level.org.springframework.web=INFO
-logging.level.com.diploma.Diplom=DEBUG
-Endpoints
-AUTH
+4. Run application
+mvn spring-boot:run
+🔌 API Reference
+Auth
 POST /auth/register
 POST /auth/login
 POST /auth/verify
-TEACHER APPLICATIONS
+Teacher Applications
 POST /teacher-applications
 GET /teacher-applications
 GET /teacher-applications/pending
-POST /teacher-applications/{applicationId}/approve
-POST /teacher-applications/{applicationId}/reject
-COURSES
+POST /teacher-applications/{id}/approve
+POST /teacher-applications/{id}/reject
+Courses
 POST /courses
 GET /courses/my
-GET /courses/{courseId}
-PUT /courses/{courseId}
-DELETE /courses/{courseId}
-LESSONS
+GET /courses/{id}
+PUT /courses/{id}
+DELETE /courses/{id}
+Lessons
 POST /lessons/course/{courseId}
 GET /lessons/course/{courseId}
-GET /lessons/{lessonId}
-PUT /lessons/{lessonId}
-DELETE /lessons/{lessonId}
-QUIZZES
+GET /lessons/{id}
+PUT /lessons/{id}
+DELETE /lessons/{id}
+Quizzes
 POST /quizzes/lesson/{lessonId}
 GET /quizzes/lesson/{lessonId}
-GET /quizzes/{quizId}
-PUT /quizzes/{quizId}
-DELETE /quizzes/{quizId}
-FILES
+GET /quizzes/{id}
+PUT /quizzes/{id}
+DELETE /quizzes/{id}
+Files
 GET /files?path=...
-Тестирование через Postman
-Авторизация
+🧪 Testing
+Login
 POST /auth/login
-
-Добавить заголовок:
-
+Authorization Header
 Authorization: Bearer YOUR_TOKEN
-Создание
-
-курс и урок → form-data
-
-квиз → raw JSON
-
-Возможные ошибки
+Request Types
+Feature	Type
+Courses	form-data
+Lessons	form-data
+Quizzes	raw JSON
+⚠️ Error Handling
 403 Forbidden
 
-отсутствует JWT токен
+missing JWT token
 
-неверная роль
+wrong role
 
-teacherApproved = false
+teacher not approved
 
 400 Bad Request
 
-отсутствуют обязательные поля
+invalid input
 
-неверный формат form-data
+missing fields
 
-ошибки в JSON
+wrong request format
 
-Ошибки данных
-
-Lesson not found
+Business Errors
 
 Course not found
 
-Quiz already exists for this lesson
+Lesson not found
 
-Безопасность
+Quiz already exists
 
-JWT authentication
+🔐 Security
 
-role-based authorization
+JWT Authentication
 
-проверка владения ресурсами
+Role-based Authorization
 
-проверка teacherApproved
+Resource Ownership Validation
 
-Гарантии:
+Teacher Approval Check
 
-преподаватель может изменять только свои курсы
-
-преподаватель может изменять только свои уроки
-
-преподаватель может изменять только свои квизы
-
-неподтверждённый преподаватель не может создавать контент
-
-Дальнейшее развитие
+🚀 Roadmap
 
 student enrollment
 
-прохождение уроков
+quiz submissions
 
-сдача квизов
+progress tracking
 
-хранение результатов
+ratings & reviews
 
-отслеживание прогресса
+cloud storage (AWS S3 / Firebase)
 
-рейтинги преподавателей
+video streaming
 
-комментарии и отзывы
+📊 Status
 
-облачное хранение файлов
+Active development. Core backend functionality is implemented.
 
-видео-стриминг
+👨‍💻 Authors
 
-Статус проекта
+Rinat
 
-Проект находится в активной разработке и уже реализует основной backend функционал LMS системы.
+Miierzhan
 
-Автор
-
-Diploma project backend by Rinat, Miierzhan and Rassul
+Rassul
