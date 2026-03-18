@@ -215,72 +215,101 @@ spring.data.mongodb.uri=mongodb://localhost:27017/diplom
 mvn spring-boot:run
 
 
----
 ## 🔌 API Endpoints
 
 ### 🔐 AUTH
 
+POST /auth/register  
+Регистрация нового пользователя  
 
-POST /auth/register
-POST /auth/login
-POST /auth/verify
+POST /auth/login  
+Авторизация пользователя, возвращает JWT токен  
 
+POST /auth/verify  
+Подтверждение email пользователя  
 
 ---
 
 ### 👨‍🏫 TEACHER APPLICATIONS
 
+POST /teacher-applications  
+Создание заявки преподавателя с загрузкой резюме  
 
-POST /teacher-applications
-GET /teacher-applications
-GET /teacher-applications/pending
-POST /teacher-applications/{applicationId}/approve
-POST /teacher-applications/{applicationId}/reject
+GET /teacher-applications  
+Получение всех заявок (ADMIN)  
 
+GET /teacher-applications/pending  
+Получение всех заявок со статусом PENDING  
+
+POST /teacher-applications/{applicationId}/approve  
+Подтверждение заявки преподавателя (ADMIN)  
+
+POST /teacher-applications/{applicationId}/reject  
+Отклонение заявки преподавателя (ADMIN)  
 
 ---
 
 ### 📚 COURSES
 
+POST /courses  
+Создание курса (только для подтверждённых преподавателей)  
 
-POST /courses
-GET /courses/my
-GET /courses/{courseId}
-PUT /courses/{courseId}
-DELETE /courses/{courseId}
+GET /courses/my  
+Получение курсов текущего преподавателя  
 
+GET /courses/{courseId}  
+Получение курса по ID  
+
+PUT /courses/{courseId}  
+Обновление курса (только владелец)  
+
+DELETE /courses/{courseId}  
+Удаление курса (только владелец)  
 
 ---
 
 ### 🎥 LESSONS
 
+POST /lessons/course/{courseId}  
+Создание урока в курсе  
 
-POST /lessons/course/{courseId}
-GET /lessons/course/{courseId}
-GET /lessons/{lessonId}
-PUT /lessons/{lessonId}
-DELETE /lessons/{lessonId}
+GET /lessons/course/{courseId}  
+Получение всех уроков курса  
 
+GET /lessons/{lessonId}  
+Получение урока по ID  
+
+PUT /lessons/{lessonId}  
+Обновление урока (только владелец курса)  
+
+DELETE /lessons/{lessonId}  
+Удаление урока (только владелец курса)  
 
 ---
 
 ### 📝 QUIZZES
 
+POST /quizzes/lesson/{lessonId}  
+Создание квиза для урока  
 
-POST /quizzes/lesson/{lessonId}
-GET /quizzes/lesson/{lessonId}
-GET /quizzes/{quizId}
-PUT /quizzes/{quizId}
-DELETE /quizzes/{quizId}
+GET /quizzes/lesson/{lessonId}  
+Получение квиза по уроку  
 
+GET /quizzes/{quizId}  
+Получение квиза по ID  
+
+PUT /quizzes/{quizId}  
+Обновление квиза (только владелец)  
+
+DELETE /quizzes/{quizId}  
+Удаление квиза (только владелец)  
 
 ---
 
 ### 📁 FILES
 
-
-GET /files?path=...
-
+GET /files?path=...  
+Получение файла по пути (видео, PDF, изображения)
 ---
 
 ## 📊 Status
