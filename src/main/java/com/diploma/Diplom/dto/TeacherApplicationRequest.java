@@ -14,11 +14,6 @@ public class TeacherApplicationRequest {
     @NotBlank(message = "Email is required")
     private String email;
 
-    @NotBlank(message = "Resume text is required")
-    private String resumeText;
-
-    private String resumeFileUrl;
-
     @NotBlank(message = "Specialization is required")
     private String specialization;
 
@@ -47,22 +42,6 @@ public class TeacherApplicationRequest {
 
     public void setEmail(String email) {
         this.email = email;
-    }
-
-    public String getResumeText() {
-        return resumeText;
-    }
-
-    public void setResumeText(String resumeText) {
-        this.resumeText = resumeText;
-    }
-
-    public String getResumeFileUrl() {
-        return resumeFileUrl;
-    }
-
-    public void setResumeFileUrl(String resumeFileUrl) {
-        this.resumeFileUrl = resumeFileUrl;
     }
 
     public String getSpecialization() {

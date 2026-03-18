@@ -14,11 +14,14 @@ public class TeacherApplication {
     private String userId;
     private String fullName;
     private String email;
-    private String resumeText;
-    private String resumeFileUrl;
     private String specialization;
     private int yearsOfExperience;
-    private String status; // PENDING, APPROVED, REJECTED
+
+    private String resumeText;
+    private String resumeFileName;
+    private String resumeFileUrl;
+
+    private String status;
     private String reviewComment;
     private Integer score;
     private LocalDateTime createdAt;
@@ -55,22 +58,6 @@ public class TeacherApplication {
         this.email = email;
     }
 
-    public String getResumeText() {
-        return resumeText;
-    }
-
-    public void setResumeText(String resumeText) {
-        this.resumeText = resumeText;
-    }
-
-    public String getResumeFileUrl() {
-        return resumeFileUrl;
-    }
-
-    public void setResumeFileUrl(String resumeFileUrl) {
-        this.resumeFileUrl = resumeFileUrl;
-    }
-
     public String getSpecialization() {
         return specialization;
     }
@@ -85,6 +72,30 @@ public class TeacherApplication {
 
     public void setYearsOfExperience(int yearsOfExperience) {
         this.yearsOfExperience = yearsOfExperience;
+    }
+
+    public String getResumeText() {
+        return resumeText;
+    }
+
+    public void setResumeText(String resumeText) {
+        this.resumeText = resumeText;
+    }
+
+    public String getResumeFileName() {
+        return resumeFileName;
+    }
+
+    public void setResumeFileName(String resumeFileName) {
+        this.resumeFileName = resumeFileName;
+    }
+
+    public String getResumeFileUrl() {
+        return resumeFileUrl;
+    }
+
+    public void setResumeFileUrl(String resumeFileUrl) {
+        this.resumeFileUrl = resumeFileUrl;
     }
 
     public String getStatus() {

@@ -4,10 +4,17 @@ import com.diploma.Diplom.dto.TeacherApplicationRequest;
 import com.diploma.Diplom.dto.TeacherReviewRequest;
 import com.diploma.Diplom.model.TeacherApplication;
 import com.diploma.Diplom.service.TeacherApplicationService;
-import jakarta.validation.Valid;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
@@ -20,10 +27,24 @@ public class TeacherApplicationController {
         this.teacherApplicationService = teacherApplicationService;
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('TEACHER')")
-    public TeacherApplication submitApplication(@Valid @RequestBody TeacherApplicationRequest request) {
-        return teacherApplicationService.submitApplication(request);
+    public TeacherApplication submitApplication(
+            @RequestParam("userId") String userId,
+            @RequestParam("fullName") String fullName,
+            @RequestParam("email") String email,
+            @RequestParam("specialization") String specialization,
+            @RequestParam("yearsOfExperience") int yearsOfExperience,
+            @RequestParam("resumeFile") MultipartFile resumeFile
+    ) {
+        TeacherApplicationRequest request = new TeacherApplicationRequest();
+        request.setUserId(userId);
+        request.setFullName(fullName);
+        request.setEmail(email);
+        request.setSpecialization(specialization);
+        request.setYearsOfExperience(yearsOfExperience);
+
+        return teacherApplicationService.submitApplication(request, resumeFile);
     }
 
     @GetMapping
@@ -51,4 +72,19 @@ public class TeacherApplicationController {
                                                 @RequestBody TeacherReviewRequest request) {
         return teacherApplicationService.rejectApplication(applicationId, request.getReviewComment());
     }
+
+    @GetMapping("/{applicationId}/file")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Resource> getFileByApplicationId(@PathVariable String applicationId) {
+        TeacherApplication application = teacherApplicationService.getApplicationById(applicationId);
+
+        Path file = Paths.get(application.getResumeFileUrl());
+        Resource resource = new FileSystemResource(file);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"" + file.getFileName().toString() + "\"")
+                .contentType(MediaType.APPLICATION_PDF)
+            .body(resource);
+}
 }
