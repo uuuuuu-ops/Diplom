@@ -117,7 +117,6 @@ Local rule-based module:
 ## 🧱 Data Models
 
 ### User
-```text
 id
 email
 password
