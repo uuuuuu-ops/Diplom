@@ -1,196 +1,260 @@
-# Diplom LMS Backend
+Diplom LMS Backend
 
-Backend часть дипломного проекта для образовательной платформы с ролями пользователей, заявками преподавателей, автоматическим анализом резюме, курсами, уроками, квизами и загрузкой файлов.
+Backend часть дипломного проекта образовательной платформы. Система реализует управление пользователями, курсами, уроками, тестами и заявками преподавателей с автоматическим анализом резюме.
 
-## Возможности проекта
+Возможности проекта
 
-Система поддерживает:
+Платформа поддерживает:
 
-- регистрацию и авторизацию пользователей через JWT
-- роли:
-  - `STUDENT`
-  - `TEACHER`
-  - `ADMIN`
-- подачу заявки преподавателя
-- загрузку PDF-резюме
-- автоматический анализ резюме
-- подтверждение преподавателя администратором
-- создание и управление курсами
-- создание и управление уроками
-- загрузку thumbnail, видео и PDF-лекций
-- создание и управление квизами
-- просмотр загруженных файлов через браузер
+регистрацию и авторизацию пользователей через JWT
 
-## Технологии
+роли пользователей: STUDENT, TEACHER, ADMIN
 
-- Java
-- Spring Boot
-- Spring Security
-- JWT
-- MongoDB
-- Apache PDFBox
-- Lombok
-- Maven
+подачу заявки преподавателя
 
-## Архитектура проекта
+загрузку PDF-резюме
+
+автоматический анализ резюме
+
+подтверждение преподавателя администратором
+
+создание и управление курсами
+
+создание и управление уроками
+
+загрузку thumbnail, видео и PDF-лекций
+
+создание и управление квизами
+
+просмотр загруженных файлов через браузер
+
+Технологии
+
+Java
+
+Spring Boot
+
+Spring Security
+
+JWT
+
+MongoDB
+
+Apache PDFBox
+
+Lombok
+
+Maven
+
+Архитектура проекта
 
 Основные модули:
 
-- `auth` — регистрация вход и верификация через email
-- `security` — JWT-фильтр и конфигурация безопасности
-- `teacher applications` — заявки преподавателей и анализ резюме
-- `courses` — управление курсами
-- `lessons` — управление уроками
-- `quizzes` — управление тестами
-- `files` — хранение и отдача файлов
+auth — регистрация, вход и верификация
 
-## Роли и логика доступа
+security — JWT-фильтр и конфигурация безопасности
 
-### STUDENT
-Может просматривать курсы, уроки и квизы после подключения student-side логики.
+teacher-applications — заявки преподавателей и анализ резюме
 
-### TEACHER
-Может:
-- подать заявку преподавателя
-- после подтверждения администратором создавать курсы, уроки и квизы
+courses — управление курсами
 
-### ADMIN
-Может:
-- просматривать заявки преподавателей
-- подтверждать или отклонять заявки
+lessons — управление уроками
 
-## Teacher approval logic
+quizzes — управление тестами
 
-Пользователь с ролью `TEACHER` не может сразу создавать курсы.
+files — хранение и отдача файлов
 
-Для этого:
+Роли и логика доступа
 
-1. пользователь регистрируется как `TEACHER`
-2. подаёт заявку преподавателя
-3. загружает PDF-резюме
-4. система анализирует резюме
-5. администратор подтверждает заявку
-6. после этого `teacherApproved = true`
-7. только после этого преподаватель может создавать курсы и уроки
+STUDENT
+Может просматривать курсы, уроки и квизы после реализации student-side логики.
 
-## Автоматический анализ резюме
+TEACHER
+Может подать заявку преподавателя и после подтверждения администратором создавать курсы, уроки и квизы.
 
-Проект использует локальный rule-based AI module для анализа резюме.
+ADMIN
+Может просматривать заявки преподавателей и подтверждать или отклонять их.
 
-### Что делает анализатор
+Teacher Approval Logic
 
-- извлекает текст из PDF
-- поддерживает английские и русские ключевые слова
-- определяет:
-  - образование
-  - преподавательский опыт
-  - навыки
-  - проекты
-  - технические компетенции
-- вычисляет:
-  - `aiScore`
-  - `aiSummary`
-  - `aiStrengths`
-  - `aiWeaknesses`
-  - `aiRecommendation`
+Пользователь с ролью TEACHER не может сразу создавать курсы.
 
-### Почему используется локальный AI agent
+Процесс:
 
-В проекте используется локальный интеллектуальный модуль, чтобы:
+пользователь регистрируется как TEACHER
 
-- не зависеть от внешнего платного API
-- упростить разработку и тестирование
-- обеспечить работу системы без внешних сервисов
+подаёт заявку преподавателя
 
-## Структура данных
+загружает PDF-резюме
 
-### User
-Содержит:
-- id
-- email
-- password
-- role
-- teacherApproved
+система анализирует резюме
 
-### TeacherApplication
-Содержит:
-- userId
-- fullName
-- email
-- resumeText
-- resumeFileName
-- resumeFileUrl
-- specialization
-- yearsOfExperience
-- aiScore
-- aiSummary
-- aiStrengths
-- aiWeaknesses
-- aiRecommendation
-- status
-- reviewComment
-- createdAt
+администратор подтверждает заявку
 
-### Course
-Содержит:
-- id
-- title
-- description
-- teacherId
-- category
-- level
-- thumbnail
-- published
-- createdAt
-- updatedAt
+устанавливается teacherApproved = true
 
-### Lesson
-Содержит:
-- id
-- courseId
-- title
-- description
-- orderIndex
-- duration
-- videoUrl
-- videoFileName
-- lectureText
-- lecturePdfUrl
-- lecturePdfFileName
-- published
-- createdAt
-- updatedAt
+после этого преподаватель получает доступ к созданию курсов и уроков
 
-### Quiz
-Содержит:
-- id
-- lessonId
-- title
-- questions
-- published
-- createdAt
-- updatedAt
+Автоматический анализ резюме
 
-### QuizQuestion
-Содержит:
-- question
-- options
-- correctAnswerIndex
+Используется локальный rule-based модуль.
 
-## Настройка проекта
+Анализатор:
 
-### 1. Клонировать проект
+извлекает текст из PDF
 
-```bash
+поддерживает английские и русские ключевые слова
+
+определяет образование, опыт, навыки, проекты и технические компетенции
+
+вычисляет aiScore, aiSummary, aiStrengths, aiWeaknesses, aiRecommendation
+
+Причины использования локального модуля:
+
+отсутствие зависимости от внешних API
+
+простота тестирования
+
+автономная работа системы
+
+Структура данных
+
+User:
+
+id
+
+email
+
+password
+
+role
+
+teacherApproved
+
+TeacherApplication:
+
+userId
+
+fullName
+
+email
+
+resumeText
+
+resumeFileName
+
+resumeFileUrl
+
+specialization
+
+yearsOfExperience
+
+aiScore
+
+aiSummary
+
+aiStrengths
+
+aiWeaknesses
+
+aiRecommendation
+
+status
+
+reviewComment
+
+createdAt
+
+Course:
+
+id
+
+title
+
+description
+
+teacherId
+
+category
+
+level
+
+thumbnail
+
+published
+
+createdAt
+
+updatedAt
+
+Lesson:
+
+id
+
+courseId
+
+title
+
+description
+
+orderIndex
+
+duration
+
+videoUrl
+
+videoFileName
+
+lectureText
+
+lecturePdfUrl
+
+lecturePdfFileName
+
+published
+
+createdAt
+
+updatedAt
+
+Quiz:
+
+id
+
+lessonId
+
+title
+
+questions
+
+published
+
+createdAt
+
+updatedAt
+
+QuizQuestion:
+
+question
+
+options
+
+correctAnswerIndex
+
+Настройка проекта
+
+Клонирование:
+
 git clone https://github.com/uuuuuu-ops/Diplom
+
 cd Diplom
 
-### 2. Настроить Монгодб
-Запустить дб локально и добавитьв application-properties
+Настройка application.properties:
+
 spring.application.name=Diplom
 server.port=8080
 
-spring.data.mongodb.uri=mongodb://localhost:8080/diplom
+spring.data.mongodb.uri=mongodb://localhost:27017/diplom
 
 spring.servlet.multipart.enabled=true
 spring.servlet.multipart.max-file-size=500MB
@@ -205,100 +269,60 @@ logging.level.org.springframework.security=DEBUG
 logging.level.org.springframework.web=INFO
 logging.level.com.diploma.Diplom=DEBUG
 
-
-##Endpoints
+Endpoints
 
 AUTH
-
 POST /auth/register
-
 POST /auth/login
-
 POST /auth/verify
 
 TEACHER APPLICATIONS
-
 POST /teacher-applications
-
 GET /teacher-applications
-
 GET /teacher-applications/pending
-
 POST /teacher-applications/{applicationId}/approve
-
 POST /teacher-applications/{applicationId}/reject
 
 COURSES
-
 POST /courses
-
 GET /courses/my
-
 GET /courses/{courseId}
-
 PUT /courses/{courseId}
-
 DELETE /courses/{courseId}
 
 LESSONS
-
 POST /lessons/course/{courseId}
-
 GET /lessons/course/{courseId}
-
 GET /lessons/{lessonId}
-
 PUT /lessons/{lessonId}
-
 DELETE /lessons/{lessonId}
 
- QUIZZES
-
+QUIZZES
 POST /quizzes/lesson/{lessonId}
-
 GET /quizzes/lesson/{lessonId}
-
 GET /quizzes/{quizId}
-
 PUT /quizzes/{quizId}
-
 DELETE /quizzes/{quizId}
 
- FILES
-
+FILES
 GET /files?path=...
 
-##Тестирование через Postman
+Тестирование через Postman
 
-###Авторизация
-
-Сначала выполнить:
+Авторизация:
 
 POST /auth/login
 
-Получить JWT token.
-
-Во все защищённые запросы добавить заголовок:
+После получения JWT необходимо добавлять заголовок:
 
 Authorization: Bearer YOUR_TOKEN
 
-2. Создание курса
+Создание курса и урока выполняется через form-data.
+Создание квиза — через raw JSON.
 
-Использовать form-data в Postman.
+Возможные ошибки
 
-3. Создание урока
-
-Использовать form-data в Postman.
-
-4. Создание квиза
-
-Использовать raw JSON.
-
-###Возможные ошибки
-
-403 Forbidden
-
-Причины:
+403 Forbidden:
 
 отсутствует JWT токен
 
@@ -306,37 +330,35 @@ Authorization: Bearer YOUR_TOKEN
 
 teacherApproved = false
 
-400 Bad Request
-
-Причины:
+400 Bad Request:
 
 отсутствуют обязательные поля
 
-неверный form-data
+неверный формат form-data
 
 ошибки в JSON
 
-Lesson not found / Course not found
+Lesson not found / Course not found:
 
-Проверь правильность lessonId и courseId
+проверь правильность ID
 
-Quiz already exists for this lesson
+Quiz already exists for this lesson:
 
-Урок уже содержит квиз
+у урока уже есть квиз
 
-###Безопасность
+Безопасность
 
-В проекте используется:
+Реализовано:
 
 JWT authentication
 
 role-based authorization
 
-ownership validation
+проверка владения ресурсами
 
-teacher approval check
+проверка teacherApproved
 
-###Проверки гарантируют, что:
+Гарантии:
 
 преподаватель может изменять только свои курсы
 
@@ -344,35 +366,32 @@ teacher approval check
 
 преподаватель может изменять только свои квизы
 
-неподтверждённый teacher не может создавать курсы и уроки
+неподтверждённый преподаватель не может создавать контент
 
-Дальнейшее развитие проекта
+Дальнейшее развитие
 
-###Следующие улучшения могут включать:
+регистрация студентов на курсы
 
-student enrollment
-
-прохождение уроков студентами
+прохождение уроков
 
 сдача квизов
 
-хранение результатов квизов
+хранение результатов
 
-progress tracking
+отслеживание прогресса
 
-рейтинг преподавателей
+рейтинги преподавателей
 
-comments/reviews
+комментарии и отзывы
 
-облачное хранение видео и PDF
+облачное хранение файлов
 
-streaming для видео
+видео-стриминг
 
 Статус проекта
 
-Проект находится в активной разработке и уже включает основной backend функционал для LMS платформы.
+Проект находится в активной разработке и уже реализует основной backend функционал LMS системы.
 
 Автор
 
-Diploma project backend by Rinat , Miierzhan and Rassul
-
+Diploma project backend by Rinat, Miierzhan and Rassul
