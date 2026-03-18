@@ -1,10 +1,14 @@
 package com.diploma.Diplom.controller;
 
+import com.diploma.Diplom.dto.CreateCourseRequest;
+import com.diploma.Diplom.dto.UpdateCourseRequest;
 import com.diploma.Diplom.model.Course;
 import com.diploma.Diplom.service.CourseService;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -18,35 +22,59 @@ public class CourseController {
         this.courseService = courseService;
     }
 
-    @GetMapping
-    @PreAuthorize("hasAnyRole('STUDENT','TEACHER','ADMIN')")
-    public List<Course> getAllCourses() {
-        return courseService.getAllCourses();
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('TEACHER')")
+    public Course createCourse(Authentication authentication,
+                               @RequestParam String title,
+                               @RequestParam String description,
+                               @RequestParam String category,
+                               @RequestParam(required = false) String level,
+                               @RequestParam(required = false) MultipartFile thumbnailFile) {
+        CreateCourseRequest request = new CreateCourseRequest();
+        request.setTitle(title);
+        request.setDescription(description);
+        request.setCategory(category);
+        request.setLevel(level);
+
+        return courseService.createCourse(authentication.getName(), request, thumbnailFile);
     }
 
-    @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('STUDENT','TEACHER','ADMIN')")
-    public ResponseEntity<Course> getCourse(@PathVariable String id) {
-        return courseService.getCourseById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    @GetMapping("/my")
+    @PreAuthorize("hasRole('TEACHER')")
+    public List<Course> getMyCourses(Authentication authentication) {
+        return courseService.getTeacherCourses(authentication.getName());
     }
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
-    public Course createCourse(@RequestBody Course course) {
-        return courseService.createCourse(course);
+    @GetMapping("/{courseId}")
+    public Course getCourseById(@PathVariable String courseId) {
+        return courseService.getCourseById(courseId);
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
-    public Course updateCourse(@PathVariable String id, @RequestBody Course course) {
-        return courseService.updateCourse(id, course);
+    @PutMapping(value = "/{courseId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('TEACHER')")
+    public Course updateCourse(Authentication authentication,
+                               @PathVariable String courseId,
+                               @RequestParam(required = false) String title,
+                               @RequestParam(required = false) String description,
+                               @RequestParam(required = false) String category,
+                               @RequestParam(required = false) String level,
+                               @RequestParam(required = false) Boolean published,
+                               @RequestParam(required = false) MultipartFile thumbnailFile) {
+        UpdateCourseRequest request = new UpdateCourseRequest();
+        request.setTitle(title);
+        request.setDescription(description);
+        request.setCategory(category);
+        request.setLevel(level);
+        request.setPublished(published);
+
+        return courseService.updateCourse(authentication.getName(), courseId, request, thumbnailFile);
     }
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public void deleteCourse(@PathVariable String id) {
-        courseService.deleteCourse(id);
+    @DeleteMapping("/{courseId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public String deleteCourse(Authentication authentication,
+                               @PathVariable String courseId) {
+        courseService.deleteCourse(authentication.getName(), courseId);
+        return "Course deleted successfully";
     }
 }

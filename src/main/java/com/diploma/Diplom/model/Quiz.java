@@ -1,11 +1,13 @@
 package com.diploma.Diplom.model;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.Data;
+
 @Data
 @Document(collection = "quizzes")
 public class Quiz {
@@ -14,10 +16,12 @@ public class Quiz {
     private String id;
 
     private String lessonId;
+    private String title;
 
-    private String question;
+    private List<QuizQuestion> questions;
 
-    private List<String> options;
+    private boolean published;
 
-    private String correctAnswer;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

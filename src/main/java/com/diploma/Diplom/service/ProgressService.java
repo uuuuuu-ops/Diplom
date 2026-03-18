@@ -40,7 +40,7 @@ public class ProgressService {
             progress.getCompletedLessons().add(lessonId);
         }
 
-        List<Lesson> lessons = lessonRepository.findByCourseId(courseId);
+        List<Lesson> lessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId);
         int totalLessons = lessons.size();
         int completed = progress.getCompletedLessons().size();
 

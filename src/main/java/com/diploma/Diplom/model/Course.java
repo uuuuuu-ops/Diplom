@@ -15,17 +15,14 @@ public class Course {
     private String id;
 
     private String title;
-
     private String description;
-
     private String teacherId;
-
     private String category;
-
+    private String level; // BEGINNER, INTERMEDIATE, ADVANCED
     private String thumbnail;
 
     private boolean published;
 
     private LocalDateTime createdAt;
-}    
-
+    private LocalDateTime updatedAt;
+}
