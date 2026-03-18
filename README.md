@@ -140,7 +140,7 @@ aiRecommendation
 status
 reviewComment
 createdAt
-Course
+###Course
 id
 title
 description
@@ -151,7 +151,7 @@ thumbnail
 published
 createdAt
 updatedAt
-Lesson
+###Lesson
 id
 courseId
 title
@@ -166,7 +166,7 @@ lecturePdfFileName
 published
 createdAt
 updatedAt
-Quiz
+###Quiz
 id
 lessonId
 title
