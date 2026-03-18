@@ -1,122 +1,135 @@
-# 🚀 Diplom LMS Backend
+🚀 Diplom LMS Backend
 
-> Backend часть дипломного проекта LMS (Learning Management System)  
-> Полноценная серверная архитектура для образовательной платформы с ролями, курсами, уроками и AI-анализом резюме.
+Backend часть дипломного проекта LMS (Learning Management System).
+Полноценная серверная архитектура для образовательной платформы с ролями, курсами, уроками и AI-анализом резюме.
 
----
+📌 Overview
 
-## 🧩 Features
+Система предоставляет:
 
-- 🔐 JWT Authentication & Authorization
-- 👥 Role-based Access (`STUDENT`, `TEACHER`, `ADMIN`)
-- 📄 Teacher Application System
-- 🤖 AI Resume Analysis (local, no external API)
-- 📚 Course Management
-- 🎥 Lesson Management (video + PDF)
-- 📝 Quiz System
-- 📁 File Upload & Serving
-- 🛡️ Secure Resource Ownership Validation
+аутентификацию и авторизацию (JWT)
 
----
+управление ролями пользователей
 
-## 🏗️ Architecture
+процесс подачи и одобрения преподавателей
 
+управление курсами, уроками и тестами
 
+загрузку и хранение файлов
+
+автоматический анализ резюме
+
+🧩 Features
+
+🔐 JWT Authentication & Authorization
+
+👥 Role-based Access (STUDENT, TEACHER, ADMIN)
+
+📄 Teacher Application System
+
+🤖 AI Resume Analysis (local, no external API)
+
+📚 Course Management
+
+🎥 Lesson Management (video + PDF)
+
+📝 Quiz System
+
+📁 File Upload & Serving
+
+🛡️ Resource Ownership Validation
+
+🏗️ Project Structure
 src/main/java/com/diploma/Diplom
-│
-├── controller # REST endpoints
-├── service # business logic
-├── repository # MongoDB access layer
-├── model # entities
-├── dto # request/response objects
-├── security # JWT, filters, config
-├── auth # authentication logic
-├── ai # resume analysis module
-└── files # file handling
 
+├── controller        # REST endpoints
+├── service           # business logic
+├── repository        # MongoDB access
+├── model             # entities
+├── dto               # DTO objects
+├── security          # JWT, filters, config
+├── auth              # authentication
+├── ai                # resume analysis
+└── files             # file handling
+⚙️ Tech Stack
+Category	Technology
+Backend	Java, Spring Boot
+Security	Spring Security, JWT
+Database	MongoDB
+File Handling	Apache PDFBox
+Build Tool	Maven
+Utilities	Lombok
+👥 Roles & Permissions
+STUDENT
 
----
+View courses, lessons and quizzes (planned)
 
-## ⚙️ Tech Stack
+TEACHER
 
-| Category        | Technology |
-|----------------|----------|
-| Backend        | Java, Spring Boot |
-| Security       | Spring Security, JWT |
-| Database       | MongoDB |
-| File Handling  | Apache PDFBox |
-| Build Tool     | Maven |
-| Utilities      | Lombok |
-
----
-
-## 👥 Roles & Permissions
-
-### STUDENT
-- View courses, lessons and quizzes *(planned)*
-
-### TEACHER
-- Submit application
-- Create content after approval:
-  - courses
-  - lessons
-  - quizzes
-
-### ADMIN
-- Review teacher applications
-- Approve or reject teachers
-
----
-
-## 🔄 Teacher Approval Workflow
-
-
-Register as TEACHER
-↓
 Submit application
-↓
+
+Create courses, lessons and quizzes (after approval)
+
+ADMIN
+
+Review teacher applications
+
+Approve or reject teachers
+
+🔄 Teacher Approval Workflow
+Register as TEACHER
+        ↓
+Submit application
+        ↓
 Upload resume (PDF)
-↓
+        ↓
 AI analysis
-↓
+        ↓
 Admin review
-↓
+        ↓
 teacherApproved = true
-↓
+        ↓
 Access to course creation
-
-
----
-
-## 🤖 AI Resume Analysis
+🤖 AI Resume Analysis
 
 Local rule-based module:
 
-### 🔍 Extracts
-- education
-- teaching experience
-- skills
-- projects
-- technical stack
+Extracts:
 
-### 📊 Generates
-- aiScore
-- aiSummary
-- aiStrengths
-- aiWeaknesses
-- aiRecommendation
+education
 
-### ✅ Why Local AI
-- no external API dependency
-- faster development
-- works offline
-- no cost
+teaching experience
 
----
+skills
 
-## 🧱 Data Models
+projects
 
-### User
+technical stack
+
+Generates:
+
+aiScore
+
+aiSummary
+
+aiStrengths
+
+aiWeaknesses
+
+aiRecommendation
+
+Why local AI:
+
+no external API dependency
+
+faster development
+
+works offline
+
+no cost
+
+🧱 Data Models
+User
 id
 email
 password
@@ -139,7 +152,7 @@ aiRecommendation
 status
 reviewComment
 createdAt
-###Course
+Course
 id
 title
 description
@@ -150,7 +163,7 @@ thumbnail
 published
 createdAt
 updatedAt
-###Lesson
+Lesson
 id
 courseId
 title
@@ -165,7 +178,7 @@ lecturePdfFileName
 published
 createdAt
 updatedAt
-###Quiz
+Quiz
 id
 lessonId
 title
@@ -227,17 +240,12 @@ GET /files?path=...
 🧪 Testing
 Login
 POST /auth/login
-Authorization Header
+Header
 Authorization: Bearer YOUR_TOKEN
-Request Types
-Feature	Type
-Courses	form-data
-Lessons	form-data
-Quizzes	raw JSON
-⚠️ Error Handling
+⚠️ Common Errors
 403 Forbidden
 
-missing JWT token
+missing JWT
 
 wrong role
 
@@ -248,8 +256,6 @@ teacher not approved
 invalid input
 
 missing fields
-
-wrong request format
 
 Business Errors
 
@@ -273,13 +279,13 @@ Teacher Approval Check
 
 student enrollment
 
-quiz submissions
+quiz submission
 
 progress tracking
 
 ratings & reviews
 
-cloud storage (AWS S3 / Firebase)
+cloud storage
 
 video streaming
 
@@ -290,7 +296,5 @@ Active development. Core backend functionality is implemented.
 👨‍💻 Authors
 
 Rinat
-
 Miierzhan
-
 Rassul
