@@ -1,11 +1,13 @@
 package com.diploma.Diplom.service;
 
+import com.diploma.Diplom.dto.ResumeAnalysisResult;
 import com.diploma.Diplom.dto.TeacherApplicationRequest;
 import com.diploma.Diplom.model.Role;
 import com.diploma.Diplom.model.TeacherApplication;
 import com.diploma.Diplom.model.User;
 import com.diploma.Diplom.repository.TeacherApplicationRepository;
 import com.diploma.Diplom.repository.UserRepository;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Service;
@@ -25,11 +27,14 @@ public class TeacherApplicationService {
 
     private final TeacherApplicationRepository teacherApplicationRepository;
     private final UserRepository userRepository;
+    private final OpenAiResumeAnalysisService openAiResumeAnalysisService;
 
     public TeacherApplicationService(TeacherApplicationRepository teacherApplicationRepository,
-                                     UserRepository userRepository) {
+                                     UserRepository userRepository,
+                                     OpenAiResumeAnalysisService openaiResumeAnalysisService) {
         this.teacherApplicationRepository = teacherApplicationRepository;
         this.userRepository = userRepository;
+        this.openAiResumeAnalysisService = openaiResumeAnalysisService;
     }
 
     public TeacherApplication submitApplication(TeacherApplicationRequest request, MultipartFile resumeFile) {
@@ -53,11 +58,6 @@ public class TeacherApplicationService {
             throw new RuntimeException("Only PDF files are allowed");
         }
 
-        String contentType = resumeFile.getContentType();
-        if (contentType != null && !contentType.equalsIgnoreCase("application/pdf")) {
-            throw new RuntimeException("Only PDF files are allowed");
-        }
-
         try {
             String uploadDir = "uploads/resumes";
             Files.createDirectories(Paths.get(uploadDir));
@@ -68,6 +68,12 @@ public class TeacherApplicationService {
             Files.copy(resumeFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             String resumeText = extractTextFromPdf(filePath);
+
+            ResumeAnalysisResult analysis = openAiResumeAnalysisService.analyzeResume(
+                    resumeText,
+                    request.getSpecialization(),
+                    request.getYearsOfExperience()
+            );
 
             TeacherApplication application = new TeacherApplication();
             application.setUserId(request.getUserId());
@@ -80,22 +86,22 @@ public class TeacherApplicationService {
             application.setYearsOfExperience(request.getYearsOfExperience());
             application.setStatus("PENDING");
             application.setCreatedAt(LocalDateTime.now());
-            application.setScore(calculateResumeScore(resumeText, request.getYearsOfExperience()));
+
+            application.setScore(analysis.getScore());
+            application.setAiSummary(analysis.getSummary());
+            application.setAiStrengths(analysis.getStrengths());
+            application.setAiWeaknesses(analysis.getWeaknesses());
+            application.setAiRecommendation(analysis.getRecommendation());
 
             return teacherApplicationRepository.save(application);
 
         } catch (IOException e) {
-            throw new RuntimeException("Failed to upload and process PDF: " + e.getMessage());
+            throw new RuntimeException("Failed to upload/process PDF: " + e.getMessage(), e);
         }
     }
 
     public List<TeacherApplication> getAllApplications() {
         return teacherApplicationRepository.findAll();
-    }
-
-    public TeacherApplication getApplicationById(String applicationId) {
-    return teacherApplicationRepository.findById(applicationId)
-            .orElseThrow(() -> new RuntimeException("Application not found"));
     }
 
     public List<TeacherApplication> getPendingApplications() {
@@ -134,39 +140,15 @@ public class TeacherApplicationService {
         return teacherApplicationRepository.save(application);
     }
 
-    private String extractTextFromPdf(Path filePath) throws IOException {
-        try (PDDocument document = PDDocument.load(filePath.toFile())) {
-            PDFTextStripper pdfStripper = new PDFTextStripper();
-            return pdfStripper.getText(document);
-        }
+    public TeacherApplication getApplicationById(String applicationId) {
+        return teacherApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new RuntimeException("Teacher application not found"));
     }
 
-    private int calculateResumeScore(String resumeText, int yearsOfExperience) {
-        int score = 0;
-
-        if (resumeText != null && resumeText.length() >= 100) {
-            score += 30;
+    private String extractTextFromPdf(Path filePath) throws IOException {
+        try (PDDocument document = Loader.loadPDF(filePath.toFile())) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            return stripper.getText(document);
         }
-
-        if (yearsOfExperience >= 1) {
-            score += 20;
-        }
-
-        if (yearsOfExperience >= 3) {
-            score += 20;
-        }
-
-        String resumeLower = resumeText == null ? "" : resumeText.toLowerCase();
-
-        if (resumeLower.contains("java")) score += 10;
-        if (resumeLower.contains("spring")) score += 10;
-        if (resumeLower.contains("teaching")) score += 10;
-        if (resumeLower.contains("education")) score += 10;
-
-        if (score > 100) {
-            score = 100;
-        }
-
-        return score;
     }
 }

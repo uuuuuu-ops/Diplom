@@ -3,8 +3,10 @@ package com.diploma.Diplom.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDateTime;
+import lombok.Data;
 
+import java.time.LocalDateTime;
+@Data
 @Document(collection = "teacher_applications")
 public class TeacherApplication {
 
@@ -25,6 +27,11 @@ public class TeacherApplication {
     private String reviewComment;
     private Integer score;
     private LocalDateTime createdAt;
+    
+    private String aiSummary;
+    private String aiStrengths;
+    private String aiWeaknesses;
+    private String aiRecommendation;
 
     public String getId() {
         return id;
