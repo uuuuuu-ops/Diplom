@@ -121,16 +121,16 @@ Local rule-based module:
 ## 🧱 Data Models
 
 ### User
-
+```
 id
 email
 password
 role
 teacherApproved
-
+```
 
 ### TeacherApplication
-
+```
 userId
 fullName
 email
@@ -147,10 +147,10 @@ aiRecommendation
 status
 reviewComment
 createdAt
-
+```
 
 ### Course
-
+```
 id
 title
 description
@@ -161,9 +161,10 @@ thumbnail
 published
 createdAt
 updatedAt
+```
 
 ### Lesson
-
+```
 id
 courseId
 title
@@ -178,10 +179,10 @@ lecturePdfFileName
 published
 createdAt
 updatedAt
-
+```
 
 ### Quiz
-
+```
 id
 lessonId
 title
@@ -189,7 +190,7 @@ questions
 published
 createdAt
 updatedAt
-
+```
 
 ---
 
