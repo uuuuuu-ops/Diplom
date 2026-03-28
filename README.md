@@ -20,15 +20,15 @@ Backend часть дипломного проекта LMS (Learning Management 
 
 ##  Features
 
-- 🔐 JWT Authentication & Authorization
-- 👥 Role-based Access (`STUDENT`, `TEACHER`, `ADMIN`)
-- 📄 Teacher Application System
-- 🤖 AI Resume Analysis (local, no external API)
-- 📚 Course Management
-- 🎥 Lesson Management (video + PDF)
-- 📝 Quiz System
-- 📁 File Upload & Serving
-- 🛡️ Resource Ownership Validation
+-  JWT Authentication & Authorization
+-  Role-based Access (`STUDENT`, `TEACHER`, `ADMIN`)
+-  Teacher Application System
+-  AI Resume Analysis (local, no external API)
+-  Course Management
+-  Lesson Management (video + PDF)
+-  Quiz System
+-  File Upload & Serving
+-  Resource Ownership Validation
 
 ---
 
