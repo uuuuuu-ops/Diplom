@@ -1,11 +1,11 @@
-# 🚀 Diplom LMS Backend
+#  Diplom LMS Backend
 
 Backend часть дипломного проекта LMS (Learning Management System).  
 Полноценная серверная архитектура для образовательной платформы с ролями, курсами, уроками и AI-анализом резюме.
 
 ---
 
-## 📌 Overview
+##  Overview
 
 Система предоставляет:
 
@@ -18,7 +18,7 @@ Backend часть дипломного проекта LMS (Learning Management 
 
 ---
 
-## 🧩 Features
+##  Features
 
 - 🔐 JWT Authentication & Authorization
 - 👥 Role-based Access (`STUDENT`, `TEACHER`, `ADMIN`)
@@ -32,7 +32,7 @@ Backend часть дипломного проекта LMS (Learning Management 
 
 ---
 
-## 🏗️ Project Structure
+##  Project Structure
 
 
 src/main/java/com/diploma/Diplom
@@ -50,7 +50,7 @@ src/main/java/com/diploma/Diplom
 
 ---
 
-## ⚙️ Tech Stack
+##  Tech Stack
 
 | Category        | Technology |
 |----------------|------------|
@@ -63,7 +63,7 @@ src/main/java/com/diploma/Diplom
 
 ---
 
-## 👥 Roles & Permissions
+##  Roles & Permissions
 
 ### STUDENT
 - View courses, lessons and quizzes *(planned)*
@@ -78,7 +78,7 @@ src/main/java/com/diploma/Diplom
 
 ---
 
-## 🔄 Teacher Approval Workflow
+##  Teacher Approval Workflow
 
 
 Register as TEACHER
@@ -98,7 +98,7 @@ Access to course creation
 
 ---
 
-## 🤖 AI Resume Analysis
+##  AI Resume Analysis
 
 Local rule-based module:
 
@@ -118,7 +118,7 @@ Local rule-based module:
 
 ---
 
-## 🧱 Data Models
+##  Data Models
 
 ### User
 ```
@@ -194,7 +194,7 @@ updatedAt
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### 1. Clone repository
 
@@ -216,9 +216,9 @@ spring.data.mongodb.uri=mongodb://localhost:27017/diplom
 mvn spring-boot:run
 
 
-## 🔌 API Endpoints
+##  API Endpoints
 
-### 🔐 AUTH
+###  AUTH
 
 POST /auth/register  
 Регистрация нового пользователя  
@@ -231,7 +231,7 @@ POST /auth/verify
 
 ---
 
-### 👨‍🏫 TEACHER APPLICATIONS
+###  TEACHER APPLICATIONS
 
 POST /teacher-applications  
 Создание заявки преподавателя с загрузкой резюме  
@@ -250,7 +250,7 @@ POST /teacher-applications/{applicationId}/reject
 
 ---
 
-### 📚 COURSES
+###  COURSES
 
 POST /courses  
 Создание курса (только для подтверждённых преподавателей)  
@@ -269,7 +269,7 @@ DELETE /courses/{courseId}
 
 ---
 
-### 🎥 LESSONS
+###  LESSONS
 
 POST /lessons/course/{courseId}  
 Создание урока в курсе  
@@ -288,7 +288,7 @@ DELETE /lessons/{lessonId}
 
 ---
 
-### 📝 QUIZZES
+###  QUIZZES
 
 POST /quizzes/lesson/{lessonId}  
 Создание квиза для урока  
@@ -307,19 +307,19 @@ DELETE /quizzes/{quizId}
 
 ---
 
-### 📁 FILES
+### FILES
 
 GET /files?path=...  
 Получение файла по пути (видео, PDF, изображения)
 ---
 
-## 📊 Status
+##  Status
 
 Active development.
 
 ---
 
-## 👨‍💻 Authors
+##  Authors
 
 Rinat  
 Miierzhan  
