@@ -18,7 +18,7 @@ public class Course {
     private String description;
     private String teacherId;
     private String category;
-    private String level; // BEGINNER, INTERMEDIATE, ADVANCED
+    private String level; 
     private String thumbnail;
 
     private boolean published;

@@ -15,12 +15,13 @@ public class Quiz {
     @Id
     private String id;
 
-    private String lessonId;
+    private String lessonId;      
     private String title;
+    private String description;
+    private Integer passingScore; 
+    private boolean published;
 
     private List<QuizQuestion> questions;
-
-    private boolean published;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

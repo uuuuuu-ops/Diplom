@@ -6,6 +6,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.Data;
+
 @Data
 @Document(collection = "certificates")
 public class Certificate {
@@ -14,10 +15,20 @@ public class Certificate {
     private String id;
 
     private String userId;
-
     private String courseId;
 
-    private LocalDateTime issuedAt;
+    private String studentName;
+    private String courseTitle;
+    private String instructorName;
 
-    private String certificateUrl;
+    private String certificateNumber;
+    private String verificationCode;
+
+    private LocalDateTime issuedAt;
+    private LocalDateTime regeneratedAt;
+
+    private String templateVersion;
+    private String pdfUrl;
+
+    private boolean active;
 }

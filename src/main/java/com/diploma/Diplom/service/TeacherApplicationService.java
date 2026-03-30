@@ -7,9 +7,9 @@ import com.diploma.Diplom.model.TeacherApplication;
 import com.diploma.Diplom.model.User;
 import com.diploma.Diplom.repository.TeacherApplicationRepository;
 import com.diploma.Diplom.repository.UserRepository;
-import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,21 +31,25 @@ public class TeacherApplicationService {
 
     public TeacherApplicationService(TeacherApplicationRepository teacherApplicationRepository,
                                      UserRepository userRepository,
-                                     OpenAiResumeAnalysisService openaiResumeAnalysisService) {
+                                     OpenAiResumeAnalysisService openAiResumeAnalysisService) {
         this.teacherApplicationRepository = teacherApplicationRepository;
         this.userRepository = userRepository;
-        this.openAiResumeAnalysisService = openaiResumeAnalysisService;
+        this.openAiResumeAnalysisService = openAiResumeAnalysisService;
     }
 
     public TeacherApplication submitApplication(TeacherApplicationRequest request, MultipartFile resumeFile) {
-        User user = userRepository.findById(request.getUserId())
+        String currentUserEmail = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        User user = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (user.getRole() != Role.TEACHER) {
             throw new RuntimeException("Only TEACHER users can submit teacher applications");
         }
 
-        if (teacherApplicationRepository.findByUserId(request.getUserId()).isPresent()) {
+        if (teacherApplicationRepository.findByUserId(user.getId()).isPresent()) {
             throw new RuntimeException("Teacher application already exists for this user");
         }
 
@@ -76,9 +80,9 @@ public class TeacherApplicationService {
             );
 
             TeacherApplication application = new TeacherApplication();
-            application.setUserId(request.getUserId());
+            application.setUserId(user.getId());
             application.setFullName(request.getFullName());
-            application.setEmail(request.getEmail());
+            application.setEmail(user.getEmail());
             application.setResumeText(resumeText);
             application.setResumeFileName(originalFileName);
             application.setResumeFileUrl(filePath.toString());
@@ -109,34 +113,45 @@ public class TeacherApplicationService {
     }
 
     public TeacherApplication approveApplication(String applicationId, String reviewComment) {
-        TeacherApplication application = teacherApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Teacher application not found"));
+    System.out.println("APPROVE START: " + applicationId);
 
-        application.setStatus("APPROVED");
-        application.setReviewComment(reviewComment);
+    TeacherApplication application = teacherApplicationRepository.findById(applicationId)
+            .orElseThrow(() -> new RuntimeException("Teacher application not found"));
 
-        User user = userRepository.findById(application.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    System.out.println("APPLICATION FOUND: " + application.getId());
+    System.out.println("APPLICATION USER ID: " + application.getUserId());
 
-        user.setTeacherApproved(true);
-        userRepository.save(user);
+    User user = userRepository.findById(application.getUserId())
+            .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return teacherApplicationRepository.save(application);
-    }
+    System.out.println("USER FOUND: " + user.getId() + " / " + user.getEmail());
+
+    application.setStatus("APPROVED");
+    application.setReviewComment(reviewComment);
+
+    user.setTeacherApproved(true);
+    user.setRole(Role.TEACHER);
+
+    userRepository.save(user);
+    TeacherApplication saved = teacherApplicationRepository.save(application);
+
+    System.out.println("APPROVE SUCCESS: " + saved.getStatus());
+    return saved;
+}
 
     public TeacherApplication rejectApplication(String applicationId, String reviewComment) {
         TeacherApplication application = teacherApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Teacher application not found"));
 
-        application.setStatus("REJECTED");
-        application.setReviewComment(reviewComment);
-
         User user = userRepository.findById(application.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        user.setTeacherApproved(false);
-        userRepository.save(user);
+        application.setStatus("REJECTED");
+        application.setReviewComment(reviewComment);
 
+        user.setTeacherApproved(false);
+
+        userRepository.save(user);
         return teacherApplicationRepository.save(application);
     }
 
@@ -146,9 +161,9 @@ public class TeacherApplicationService {
     }
 
     private String extractTextFromPdf(Path filePath) throws IOException {
-        try (PDDocument document = Loader.loadPDF(filePath.toFile())) {
-            PDFTextStripper stripper = new PDFTextStripper();
-            return stripper.getText(document);
-        }
+    try (PDDocument document = PDDocument.load(filePath.toFile())) {
+        PDFTextStripper stripper = new PDFTextStripper();
+        return stripper.getText(document);
     }
+}
 }

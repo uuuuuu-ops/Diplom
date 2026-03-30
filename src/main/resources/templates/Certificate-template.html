@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Certificate</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            border: 12px solid #1e3a8a;
+            padding: 60px;
+            margin: 30px;
+        }
+
+        .title {
+            font-size: 42px;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-top: 20px;
+        }
+
+        .subtitle {
+            font-size: 20px;
+            margin-top: 20px;
+        }
+
+        .name {
+            font-size: 34px;
+            font-weight: bold;
+            margin-top: 30px;
+            color: #111827;
+        }
+
+        .course {
+            font-size: 26px;
+            margin-top: 25px;
+            color: #2563eb;
+        }
+
+        .info {
+            margin-top: 25px;
+            font-size: 18px;
+        }
+
+        .footer {
+            margin-top: 50px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .qr {
+            margin-top: 30px;
+        }
+
+        img {
+            width: 140px;
+            height: 140px;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">Certificate of Completion</div>
+    <div class="subtitle">This certificate is proudly presented to</div>
+    <div class="name" th:text="${studentName}">Student Name</div>
+    <div class="subtitle">for successfully completing the course</div>
+    <div class="course" th:text="${courseTitle}">Course Title</div>
+
+    <div class="info">
+        Instructor: <span th:text="${instructorName}">Instructor Name</span>
+    </div>
+
+    <div class="info">
+        Date of Issue: <span th:text="${issuedAt}">01.01.2026</span>
+    </div>
+
+    <div class="info">
+        Certificate No: <span th:text="${certificateNumber}">CERT-123</span>
+    </div>
+
+    <div class="info">
+        Verification Code: <span th:text="${verificationCode}">ABC123XYZ</span>
+    </div>
+
+    <div class="qr">
+        <img th:src="'data:image/png;base64,' + ${qrCodeBase64}" alt="QR Code"/>
+    </div>
+
+    <div class="footer">
+        Verify this certificate at:
+        <span th:text="${verificationUrl}">http://localhost:8080/api/certificates/verify/code</span>
+    </div>
+</body>
+</html>

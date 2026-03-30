@@ -26,7 +26,6 @@ public class Lesson {
     private String videoFileName;
 
     private String lectureText;
-
     private String lecturePdfUrl;
     private String lecturePdfFileName;
 

@@ -27,25 +27,25 @@ public class TeacherApplicationController {
         this.teacherApplicationService = teacherApplicationService;
     }
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('TEACHER')")
-    public TeacherApplication submitApplication(
-            @RequestParam("userId") String userId,
-            @RequestParam("fullName") String fullName,
-            @RequestParam("email") String email,
-            @RequestParam("specialization") String specialization,
-            @RequestParam("yearsOfExperience") int yearsOfExperience,
-            @RequestParam("resumeFile") MultipartFile resumeFile
-    ) {
-        TeacherApplicationRequest request = new TeacherApplicationRequest();
-        request.setUserId(userId);
-        request.setFullName(fullName);
-        request.setEmail(email);
-        request.setSpecialization(specialization);
-        request.setYearsOfExperience(yearsOfExperience);
+ @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+@PreAuthorize("hasRole('TEACHER')")
+public TeacherApplication submitApplication(
+        java.security.Principal principal,       
+        @RequestParam("fullName") String fullName,
+        @RequestParam("email") String email,
+        @RequestParam("specialization") String specialization,
+        @RequestParam("yearsOfExperience") int yearsOfExperience,
+        @RequestParam("resumeFile") MultipartFile resumeFile
+) {
+    TeacherApplicationRequest request = new TeacherApplicationRequest();
+    request.setUserId(principal.getName()); // email из JWT → userId
+    request.setFullName(fullName);
+    request.setEmail(email);
+    request.setSpecialization(specialization);
+    request.setYearsOfExperience(yearsOfExperience);
 
-        return teacherApplicationService.submitApplication(request, resumeFile);
-    }
+    return teacherApplicationService.submitApplication(request, resumeFile);
+}
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
