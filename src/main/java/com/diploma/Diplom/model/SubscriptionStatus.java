@@ -1,8 +1,9 @@
 package com.diploma.Diplom.model;
 
 public enum SubscriptionStatus {
-    PENDING,
+    APPROVAL_PENDING,
     ACTIVE,
-    EXPIRED,
-    CANCELLED
+    SUSPENDED,
+    CANCELLED,
+    EXPIRED
 }

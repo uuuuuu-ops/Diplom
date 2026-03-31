@@ -1,10 +1,13 @@
 package com.diploma.Diplom.model;
 
-import java.time.LocalDateTime;
-
+import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Data
 @Document(collection = "payments")
 public class Payment {
 
@@ -12,92 +15,20 @@ public class Payment {
     private String id;
 
     private String userId;
-    private String subscriptionId;
-    private double amount;
-    private String currency;
-    private String provider; // MOCK
+    private String courseId;
+
+    private PaymentType type;
     private PaymentStatus status;
-    private String externalPaymentId;
+
+    private BigDecimal amount;
+    private String currency;
+
+    private String provider; 
+    private String paypalOrderId;
+    private String paypalCaptureId;
+
+    private String approvalUrl;
+
     private LocalDateTime createdAt;
-    private LocalDateTime paidAt;
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
-    public String getSubscriptionId() {
-        return subscriptionId;
-    }
-
-    public void setSubscriptionId(String subscriptionId) {
-        this.subscriptionId = subscriptionId;
-    }
-
-    public double getAmount() {
-        return amount;
-    }
-
-    public void setAmount(double amount) {
-        this.amount = amount;
-    }
-
-    public String getCurrency() {
-        return currency;
-    }
-
-    public void setCurrency(String currency) {
-        this.currency = currency;
-    }
-
-    public String getProvider() {
-        return provider;
-    }
-
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
-    public PaymentStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(PaymentStatus status) {
-        this.status = status;
-    }
-
-    public String getExternalPaymentId() {
-        return externalPaymentId;
-    }
-
-    public void setExternalPaymentId(String externalPaymentId) {
-        this.externalPaymentId = externalPaymentId;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getPaidAt() {
-        return paidAt;
-    }
-
-    public void setPaidAt(LocalDateTime paidAt) {
-        this.paidAt = paidAt;
-    }
+    private LocalDateTime updatedAt;
 }

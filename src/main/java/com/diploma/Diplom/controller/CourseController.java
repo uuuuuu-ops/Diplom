@@ -10,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -29,12 +30,23 @@ public class CourseController {
                                @RequestParam String description,
                                @RequestParam String category,
                                @RequestParam(required = false) String level,
-                               @RequestParam(required = false) MultipartFile thumbnailFile) {
+                               @RequestParam(required = false) MultipartFile thumbnailFile,
+                               @RequestParam(required = false) Boolean free,
+                               @RequestParam(required = false) BigDecimal price) {
+        
+
+        System.out.println("price = " + price);
+
+
         CreateCourseRequest request = new CreateCourseRequest();
         request.setTitle(title);
         request.setDescription(description);
         request.setCategory(category);
         request.setLevel(level);
+        request.setFree(free);
+        request.setPrice(price);
+        System.out.println("CONTROLLER request.getPrice() = " + request.getPrice());
+
 
         return courseService.createCourse(authentication.getName(), request, thumbnailFile);
     }

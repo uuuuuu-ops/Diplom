@@ -1,11 +1,12 @@
 package com.diploma.Diplom.model;
 
-import java.time.LocalDateTime;
-
+import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import lombok.Data;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Document(collection = "courses")
@@ -18,10 +19,16 @@ public class Course {
     private String description;
     private String teacherId;
     private String category;
-    private String level; 
+    private String level;
     private String thumbnail;
 
     private boolean published;
+
+    private boolean free;
+    private BigDecimal price;
+    private String currency = "USD";
+
+    private List<String> accessibleBySubscriptions;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

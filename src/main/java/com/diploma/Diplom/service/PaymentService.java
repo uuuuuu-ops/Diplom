@@ -1,12 +1,9 @@
 package com.diploma.Diplom.service;
 
-import com.diploma.Diplom.dto.CreateSubscriptionRequest;
 import com.diploma.Diplom.model.Payment;
 import com.diploma.Diplom.model.PaymentStatus;
-import com.diploma.Diplom.model.Subscription;
-import com.diploma.Diplom.model.SubscriptionStatus;
+import com.diploma.Diplom.model.PaymentType;
 import com.diploma.Diplom.repository.PaymentRepository;
-import com.diploma.Diplom.repository.SubscriptionRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -16,76 +13,56 @@ import java.util.List;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
-    private final SubscriptionRepository subscriptionRepository;
-    private final SubscriptionService subscriptionService;
 
-    public PaymentService(PaymentRepository paymentRepository,
-                          SubscriptionRepository subscriptionRepository,
-                          SubscriptionService subscriptionService) {
+    public PaymentService(PaymentRepository paymentRepository) {
         this.paymentRepository = paymentRepository;
-        this.subscriptionRepository = subscriptionRepository;
-        this.subscriptionService = subscriptionService;
     }
 
-    public Payment createPaymentForSubscription(CreateSubscriptionRequest request) {
-        Subscription subscription = subscriptionService.createPendingSubscription(request);
+    public Payment createCoursePayment(String userId,
+                                       String courseId,
+                                       String paypalOrderId,
+                                       String approvalUrl,
+                                       java.math.BigDecimal amount,
+                                       String currency) {
 
         Payment payment = new Payment();
-        payment.setUserId(request.getUserId());
-        payment.setSubscriptionId(subscription.getId());
-        payment.setAmount(calculateAmount(request.getType()));
-        payment.setCurrency("KZT");
-        payment.setProvider("MOCK");
-        payment.setStatus(PaymentStatus.PENDING);
-        payment.setExternalPaymentId("MOCK-" + System.currentTimeMillis());
+        payment.setUserId(userId);
+        payment.setCourseId(courseId);
+        payment.setType(PaymentType.COURSE_PURCHASE);
+        payment.setStatus(PaymentStatus.CREATED);
+        payment.setAmount(amount);
+        payment.setCurrency(currency);
+        payment.setProvider("PAYPAL");
+        payment.setPaypalOrderId(paypalOrderId);
+        payment.setApprovalUrl(approvalUrl);
         payment.setCreatedAt(LocalDateTime.now());
+        payment.setUpdatedAt(LocalDateTime.now());
 
         return paymentRepository.save(payment);
     }
 
-    public Payment mockPay(String paymentId) {
-        Payment payment = paymentRepository.findById(paymentId)
+    public Payment markAsCaptured(String orderId, String captureId) {
+        Payment payment = paymentRepository.findByPaypalOrderId(orderId)
                 .orElseThrow(() -> new RuntimeException("Payment not found"));
 
-        if (payment.getStatus() == PaymentStatus.PAID) {
-            return payment;
-        }
+        payment.setStatus(PaymentStatus.CAPTURED);
+        payment.setPaypalCaptureId(captureId);
+        payment.setUpdatedAt(LocalDateTime.now());
 
-        payment.setStatus(PaymentStatus.PAID);
-        payment.setPaidAt(LocalDateTime.now());
-        Payment savedPayment = paymentRepository.save(payment);
+        return paymentRepository.save(payment);
+    }
 
-        Subscription subscription = subscriptionRepository.findById(payment.getSubscriptionId())
-                .orElseThrow(() -> new RuntimeException("Subscription not found"));
+    public Payment markAsFailed(String orderId) {
+        Payment payment = paymentRepository.findByPaypalOrderId(orderId)
+                .orElseThrow(() -> new RuntimeException("Payment not found"));
 
-        subscription.setStatus(SubscriptionStatus.ACTIVE);
-        subscription.setActive(true);
-        subscription.setStartDate(LocalDateTime.now());
-        subscription.setEndDate(calculateEndDate(subscription.getType()));
-        subscriptionRepository.save(subscription);
+        payment.setStatus(PaymentStatus.FAILED);
+        payment.setUpdatedAt(LocalDateTime.now());
 
-        return savedPayment;
+        return paymentRepository.save(payment);
     }
 
     public List<Payment> getPaymentsByUser(String userId) {
         return paymentRepository.findByUserId(userId);
-    }
-
-    private double calculateAmount(String type) {
-        return switch (type.toUpperCase()) {
-            case "PRO" -> 5000;
-            case "CORPORATE" -> 25000;
-            case "FREE" -> 0;
-            default -> throw new RuntimeException("Unknown subscription type");
-        };
-    }
-
-    private LocalDateTime calculateEndDate(String type) {
-        return switch (type.toUpperCase()) {
-            case "PRO" -> LocalDateTime.now().plusMonths(1);
-            case "CORPORATE" -> LocalDateTime.now().plusMonths(1);
-            case "FREE" -> LocalDateTime.now().plusDays(7);
-            default -> throw new RuntimeException("Unknown subscription type");
-        };
     }
 }

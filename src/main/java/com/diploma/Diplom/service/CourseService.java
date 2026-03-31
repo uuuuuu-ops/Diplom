@@ -32,29 +32,44 @@ public class CourseService {
         this.fileStorageService = fileStorageService;
     }
 
-    public Course createCourse(String teacherEmail,
-                               CreateCourseRequest request,
-                               MultipartFile thumbnailFile) {
-        User user = getApprovedTeacher(teacherEmail);
+   public Course createCourse(String teacherEmail,
+                           CreateCourseRequest request,
+                           MultipartFile thumbnailFile) {
 
-        Course course = new Course();
-        course.setTeacherId(user.getId());
-        course.setTitle(request.getTitle());
-        course.setDescription(request.getDescription());
-        course.setCategory(request.getCategory());
-        course.setLevel(request.getLevel());
-        course.setPublished(false);
-        course.setCreatedAt(LocalDateTime.now());
-        course.setUpdatedAt(LocalDateTime.now());
+    User user = getApprovedTeacher(teacherEmail);
 
-        if (thumbnailFile != null && !thumbnailFile.isEmpty()) {
-            FileStorageService.FileUploadResult uploaded =
-                    fileStorageService.saveFile(thumbnailFile, "thumbnails");
-            course.setThumbnail(uploaded.getFileUrl());
+    Course course = new Course();
+    course.setTeacherId(user.getId());
+    course.setTitle(request.getTitle());
+    course.setDescription(request.getDescription());
+    course.setCategory(request.getCategory());
+    course.setLevel(request.getLevel());
+    course.setPublished(request.getPublished() != null ? request.getPublished() : false);
+
+    course.setFree(request.isFree());
+
+    if (request.isFree()) {
+        course.setPrice(java.math.BigDecimal.ZERO);
+    } else {
+        if (request.getPrice() == null) {
+            throw new RuntimeException("Price is required for paid course");
         }
-
-        return courseRepository.save(course);
+        course.setPrice(request.getPrice());
     }
+
+    course.setCurrency("USD");
+
+    course.setCreatedAt(LocalDateTime.now());
+    course.setUpdatedAt(LocalDateTime.now());
+
+    if (thumbnailFile != null && !thumbnailFile.isEmpty()) {
+        FileStorageService.FileUploadResult uploaded =
+                fileStorageService.saveFile(thumbnailFile, "thumbnails");
+        course.setThumbnail(uploaded.getFileUrl());
+    }
+
+    return courseRepository.save(course);
+}
 
     public List<Course> getTeacherCourses(String teacherEmail) {
         User user = getApprovedTeacher(teacherEmail);

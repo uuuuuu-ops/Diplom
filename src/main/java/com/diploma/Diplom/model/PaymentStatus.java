@@ -1,8 +1,10 @@
 package com.diploma.Diplom.model;
 
 public enum PaymentStatus {
-    PENDING,
-    PAID,
+    CREATED,
+    APPROVED,
+    CAPTURED,
     FAILED,
-    CANCELLED
+    CANCELLED,
+    REFUNDED
 }

@@ -1,5 +1,7 @@
 package com.diploma.Diplom.dto;
 
+import java.math.BigDecimal;
+
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -16,4 +18,11 @@ public class CreateCourseRequest {
     private String category;
 
     private String level;
+
+    private Boolean published;
+
+    private boolean free;
+
+    private BigDecimal price;
+
 }
