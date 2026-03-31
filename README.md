@@ -201,16 +201,18 @@ published
 createdAt
 updatedAt
 ```
+
+### Enrollment
 ```
-Enrollment
+
 id
 userId
 courseId
 createdAt
 ```
-
+### Payment
 ```
-Payment
+
 id
 userId
 courseId
@@ -219,9 +221,9 @@ amount
 status
 createdAt
 ```
-
+### Subscription
 ```
-Subscription
+
 id
 userId
 subscriptionId
@@ -359,29 +361,39 @@ GET /api/certificates/verify/{verificationCode}
 
 ### PAYMENTS (PayPal)
 
-POST /payments/paypal/orders/course/{courseId} — создать PayPal order для покупки курса
+POST /payments/paypal/orders/course/{courseId} 
+создать PayPal order для покупки курса
 
-POST /payments/paypal/orders/capture — подтвердить оплату после approve
+POST /payments/paypal/orders/capture 
+подтвердить оплату после approve
 
-GET /payments/paypal/my — получить мои платежи
+GET /payments/paypal/my 
+получить мои платежи
 
 ### SUBSCRIPTIONS (PayPal)
 
-GET /subscriptions/paypal/plan — получить PayPal planId
+GET /subscriptions/paypal/plan 
+получить PayPal planId
 
-POST /subscriptions/paypal/confirm — подтвердить подписку
+POST /subscriptions/paypal/confirm 
+подтвердить подписку
 
-POST /subscriptions/paypal/save-pending — сохранить pending subscription
+POST /subscriptions/paypal/save-pending 
+сохранить pending subscription
 
-GET /subscriptions/paypal/my — получить мои подписки
+GET /subscriptions/paypal/my 
+получить мои подписки
 
 ### ENROLLMENTS
 
-POST /enrollments/free/{courseId} — записаться на бесплатный курс
+POST /enrollments/free/{courseId} 
+записаться на бесплатный курс
 
-GET /enrollments/check/{courseId} — проверить доступ к курсу
+GET /enrollments/check/{courseId} 
+проверить доступ к курсу
 
-GET /enrollments/my — получить мои enrollments
+GET /enrollments/my 
+получить мои enrollments
 
 
 
@@ -397,14 +409,17 @@ The frontend should interact with the backend in the following way:
 ## Register
 
 POST /auth/register
+
 json{ "email": "user@mail.com", "password": "pass123", "role": "STUDENT" }
 roles: STUDENT or TEACHER
 
 ## Login
 
 POST /auth/login
+
 json{ "email": "user@mail.com", "password": "pass123" }
 → returns JWT token. Store it and attach to every request.
+
 Verify email
 POST /auth/verify
 json{ "email": "user@mail.com", "code": "123456" }
