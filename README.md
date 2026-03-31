@@ -15,6 +15,9 @@ Backend часть дипломного проекта LMS (Learning Management 
 - управление курсами, уроками и тестами
 - загрузку и хранение файлов
 - автоматический анализ резюме
+- оплату курсов через PayPal
+- подписочную модель доступа
+- систему enrollments и проверки доступа к курсам
 
 ---
 
@@ -29,6 +32,9 @@ Backend часть дипломного проекта LMS (Learning Management 
 -  Quiz System
 -  File Upload & Serving
 -  Resource Ownership Validation
+- PayPal Course Payments
+- PayPal Subscriptions
+- Enrollment & Access Control
 
 ---
 
@@ -65,15 +71,16 @@ src/main/java/com/diploma/Diplom
 
 ##  Roles & Permissions
 
-### STUDENT
-- View courses, lessons and quizzes *(planned)*
-
-### TEACHER
-- Submit application  
-- Create courses, lessons and quizzes *(after approval)*
-
-### ADMIN
-- Review teacher applications  
+# STUDENT
+- Browse courses
+- Enroll in free courses
+- Buy paid courses
+- Access lessons if enrolled or subscribed
+# TEACHER
+- Submit application
+- Create courses, lessons and quizzes after approval
+# ADMIN
+- Review teacher applications
 - Approve or reject teachers
 
 ---
@@ -81,19 +88,19 @@ src/main/java/com/diploma/Diplom
 ##  Teacher Approval Workflow
 
 
-Register as TEACHER
-↓
-Submit application
-↓
-Upload resume (PDF)
-↓
-AI analysis
-↓
-Admin review
-↓
-teacherApproved = true
-↓
-Access to course creation
+- Register as TEACHER
+- ↓
+- Submit application
+- ↓
+- Upload resume (PDF)
+- ↓
+- AI analysis
+- ↓
+- Admin review
+- ↓
+- teacherApproved = true
+- ↓
+- Access to course creation
 
 
 ---
@@ -159,6 +166,9 @@ category
 level
 thumbnail
 published
+free
+price
+currency
 createdAt
 updatedAt
 ```
@@ -191,7 +201,34 @@ published
 createdAt
 updatedAt
 ```
+```
+Enrollment
+id
+userId
+courseId
+createdAt
+```
 
+```
+Payment
+id
+userId
+courseId
+orderId
+amount
+status
+createdAt
+```
+
+```
+Subscription
+id
+userId
+subscriptionId
+planType
+status
+createdAt
+```
 ---
 
 ##  Getting Started
@@ -320,6 +357,35 @@ GET /api/certificates/{certificateId}
 GET /api/certificates/verify/{verificationCode}
 
 
+### PAYMENTS (PayPal)
+
+POST /payments/paypal/orders/course/{courseId} — создать PayPal order для покупки курса
+
+POST /payments/paypal/orders/capture — подтвердить оплату после approve
+
+GET /payments/paypal/my — получить мои платежи
+
+### SUBSCRIPTIONS (PayPal)
+
+GET /subscriptions/paypal/plan — получить PayPal planId
+
+POST /subscriptions/paypal/confirm — подтвердить подписку
+
+POST /subscriptions/paypal/save-pending — сохранить pending subscription
+
+GET /subscriptions/paypal/my — получить мои подписки
+
+### ENROLLMENTS
+
+POST /enrollments/free/{courseId} — записаться на бесплатный курс
+
+GET /enrollments/check/{courseId} — проверить доступ к курсу
+
+GET /enrollments/my — получить мои enrollments
+
+
+
+
 
 ## Frontend Integration Flow
 
@@ -327,33 +393,36 @@ The frontend should interact with the backend in the following way:
 
 
 # AUTH
-Register
+
+## Register
+
 POST /auth/register
 json{ "email": "user@mail.com", "password": "pass123", "role": "STUDENT" }
 roles: STUDENT or TEACHER
-Login
+
+## Login
+
 POST /auth/login
 json{ "email": "user@mail.com", "password": "pass123" }
 → returns JWT token. Store it and attach to every request.
 Verify email
 POST /auth/verify
 json{ "email": "user@mail.com", "code": "123456" }
-```
 
----
 
-# TEACHER APPLICATION FLOW
+# Teacher Application Flow
 
 After registering as `TEACHER`, the user must submit an application and wait for admin approval before they can create courses. `teacherApproved` in the JWT will flip to `true` once approved.
 
 **Submit application + upload resume**
 `POST /teacher-applications`
 `Content-Type: multipart/form-data`
-```
+
 fullName: "Rassul Bekov"
 specialization: "Backend Development"
 yearsOfExperience: 3
 resume: <PDF file>
+
 → AI automatically scores the resume and fills aiScore, aiSummary, aiStrengths, aiWeaknesses
 Admin: get all applications
 GET /teacher-applications 🔒 ADMIN
@@ -382,19 +451,19 @@ GET /courses/{courseId}
 Update course
 PUT /courses/{courseId}
 json{ "title": "Updated title", "description": "...", "published": true }
-```
+
 
 **Delete course**
 `DELETE /courses/{courseId}`
 
----
+
 
 # LESSONS TEACHER (course owner)
 
 **Create lesson**
 `POST /lessons/course/{courseId}`
 `Content-Type: multipart/form-data`
-```
+
 title: "Intro to Controllers"
 description: "..."
 orderIndex: 1
@@ -425,7 +494,7 @@ json{
     }
   ]
 }
-```
+
 
 **Get quiz by lesson**
 `GET /quizzes/lesson/{lessonId}`
@@ -440,6 +509,51 @@ json{
 `DELETE /quizzes/{quizId}`
 
 ---
+
+
+# Paid Course Flow
+
+User clicks Buy Course
+
+Frontend calls:
+POST /payments/paypal/orders/course/{courseId}
+Backend returns PayPal order data
+
+User approves payment in PayPal
+Frontend sends:
+POST /payments/paypal/orders/capture
+Payment is saved in backend
+
+# Subscription Flow
+Frontend requests plan:
+GET /subscriptions/paypal/plan
+
+Frontend renders PayPal subscription button
+After PayPal approval frontend receives subscriptionId
+Frontend sends it to:
+POST /subscriptions/paypal/confirm
+
+# Optional pending flow:
+
+POST /subscriptions/paypal/save-pending
+Free Course Enrollment Flow
+
+User clicks Enroll for Free
+Frontend calls:
+POST /enrollments/free/{courseId}
+Enrollment is created
+
+Access can be checked via:
+GET /enrollments/check/{courseId}
+Access Check
+
+GET /enrollments/check/{courseId}
+
+# Используется для:
+
+показа кнопки Buy / Subscribe / Open
+скрытия закрытого контента
+проверки доступа к урокам курса
 
 # FILES
 
@@ -461,50 +575,431 @@ Pass the JWT header. Use the `videoUrl`, `lecturePdfUrl`, `resumeFileUrl`, and `
 
 ---
 
-# Frontend Routing Suggestion
-```
-/login
-/register
-/verify-email
+## Frontend Routing + API Mapping
 
-/student/courses
-/student/courses/:courseId
-/student/courses/:courseId/lessons/:lessonId
+### AUTH
 
-/teacher/apply
-/teacher/application-status
-/teacher/courses
-/teacher/courses/new
-/teacher/courses/:courseId/edit
-/teacher/courses/:courseId/lessons/new
-/teacher/courses/:courseId/lessons/:lessonId/edit
-/teacher/courses/:courseId/lessons/:lessonId/quiz
+#### `/login`
+Использует:
+- `POST /auth/login`
 
-/admin/applications
-/admin/applications/:applicationId
-
-# Certificate
-
-1. When a student completes a lesson, call:
-   `POST /progress/complete`
-
-2. When a student submits a quiz, call:
-   `POST /quiz-attempts/submit`
-
-3. After each lesson completion or quiz submission, refresh the course progress using:
-   `GET /progress`
-
-4. If the course reaches 100% completion and all required quizzes are passed, the certificate is automatically generated by the backend.
-
-5. To display certificate details on the certificate page, use:
-   `GET /certificates/{id}`
-
-6. To verify certificate authenticity publicly, use:
-   `GET /certificates/verify/{verificationCode}`
+Назначение:
+- авторизация пользователя
+- получение JWT токена
 
 ---
 
+#### `/register`
+Использует:
+- `POST /auth/register`
 
+Назначение:
+- регистрация нового пользователя (`STUDENT` или `TEACHER`)
+
+---
+
+#### `/verify-email`
+Использует:
+- `POST /auth/verify`
+
+Назначение:
+- подтверждение email пользователя
+
+---
+
+### STUDENT
+
+#### `/student/courses`
+Использует:
+- `GET /courses/{courseId}` *(для отдельной карточки курса или списка через будущий публичный список курсов)*
+- `GET /enrollments/my`
+- `GET /subscriptions/paypal/my`
+- `GET /payments/paypal/my`
+
+Назначение:
+- просмотр доступных курсов
+- отображение статуса доступа
+- отображение купленных / доступных курсов
+
+---
+
+#### `/student/courses/:courseId`
+Использует:
+- `GET /courses/{courseId}`
+- `GET /enrollments/check/{courseId}`
+
+Дополнительно может вызывать:
+- `POST /enrollments/free/{courseId}` — если курс бесплатный
+- `POST /payments/paypal/orders/course/{courseId}` — если курс платный
+- `GET /subscriptions/paypal/plan` — если доступ по подписке
+
+Назначение:
+- просмотр страницы курса
+- показ кнопки `Enroll`, `Buy`, `Subscribe` или `Open`
+
+---
+
+#### `/student/courses/:courseId/lessons/:lessonId`
+Использует:
+- `GET /enrollments/check/{courseId}`
+- `GET /lessons/{lessonId}`
+- `GET /quizzes/lesson/{lessonId}`
+
+Назначение:
+- просмотр урока
+- загрузка lesson content
+- получение quiz для урока
+- защита страницы через access check
+
+---
+
+#### `/student/payments`
+Использует:
+- `GET /payments/paypal/my`
+
+Назначение:
+- отображение истории платежей пользователя
+
+---
+
+#### `/student/subscriptions`
+Использует:
+- `GET /subscriptions/paypal/my`
+- `GET /subscriptions/paypal/plan`
+
+Назначение:
+- просмотр текущей подписки
+- отображение доступного PayPal plan
+
+---
+
+#### `/student/enrollments`
+Использует:
+- `GET /enrollments/my`
+
+Назначение:
+- отображение всех enrollment записей пользователя
+
+---
+
+#### `/student/courses/:courseId/buy`
+Использует:
+- `POST /payments/paypal/orders/course/{courseId}`
+
+После approve:
+- `POST /payments/paypal/orders/capture`
+
+Назначение:
+- запуск покупки платного курса через PayPal
+
+---
+
+#### `/student/courses/:courseId/subscribe`
+Использует:
+- `GET /subscriptions/paypal/plan`
+
+После approve:
+- `POST /subscriptions/paypal/confirm`
+
+Опционально:
+- `POST /subscriptions/paypal/save-pending`
+
+Назначение:
+- запуск подписочного PayPal flow
+
+---
+
+#### `/student/courses/:courseId/access`
+Использует:
+- `GET /enrollments/check/{courseId}`
+
+Назначение:
+- проверка, есть ли у пользователя доступ к курсу
+
+---
+
+### TEACHER
+
+#### `/teacher/apply`
+Использует:
+- `POST /teacher-applications`
+
+Назначение:
+- подача заявки преподавателя
+- загрузка resume PDF
+- запуск AI resume analysis
+
+---
+
+#### `/teacher/application-status`
+Использует:
+- `GET /teacher-applications` *(если есть отдельный endpoint статуса для текущего пользователя — лучше использовать его, но из текущего README явно не показан)*
+
+Назначение:
+- просмотр статуса заявки преподавателя
+
+---
+
+#### `/teacher/courses`
+Использует:
+- `GET /courses/my`
+
+Назначение:
+- отображение всех курсов преподавателя
+
+---
+
+#### `/teacher/courses/new`
+Использует:
+- `POST /courses`
+
+`Content-Type: multipart/form-data`
+
+Поля:
+- `title`
+- `description`
+- `category`
+- `level`
+- `thumbnailFile`
+- `free`
+- `price`
+
+Назначение:
+- создание нового курса
+
+---
+
+#### `/teacher/courses/:courseId/edit`
+Использует:
+- `GET /courses/{courseId}`
+- `PUT /courses/{courseId}`
+
+`Content-Type: multipart/form-data`
+
+Поля:
+- `title`
+- `description`
+- `category`
+- `level`
+- `published`
+- `thumbnailFile`
+
+Дополнительно:
+- `DELETE /courses/{courseId}`
+
+Назначение:
+- редактирование курса
+- публикация курса
+- удаление курса
+
+---
+
+#### `/teacher/courses/:courseId/settings`
+Использует:
+- `GET /courses/{courseId}`
+- `PUT /courses/{courseId}`
+
+Назначение:
+- настройка публикации курса
+- обновление thumbnail
+- настройка метаданных курса
+
+---
+
+#### `/teacher/courses/:courseId/lessons/new`
+Использует:
+- `POST /lessons/course/{courseId}`
+
+Назначение:
+- создание нового урока внутри курса
+
+---
+
+#### `/teacher/courses/:courseId/lessons/:lessonId/edit`
+Использует:
+- `GET /lessons/{lessonId}`
+- `PUT /lessons/{lessonId}`
+- `DELETE /lessons/{lessonId}`
+
+Назначение:
+- редактирование или удаление урока
+
+---
+
+#### `/teacher/courses/:courseId/lessons/:lessonId/quiz`
+Использует:
+- `POST /quizzes/lesson/{lessonId}`
+- `GET /quizzes/lesson/{lessonId}`
+- `GET /quizzes/{quizId}`
+- `PUT /quizzes/{quizId}`
+- `DELETE /quizzes/{quizId}`
+
+Назначение:
+- создание, просмотр, обновление и удаление квиза
+
+---
+
+### ADMIN
+
+#### `/admin/applications`
+Использует:
+- `GET /teacher-applications`
+- `GET /teacher-applications/pending`
+
+Назначение:
+- просмотр всех teacher applications
+- фильтрация pending заявок
+
+---
+
+#### `/admin/applications/:applicationId`
+Использует:
+- `POST /teacher-applications/{applicationId}/approve`
+- `POST /teacher-applications/{applicationId}/reject`
+
+Назначение:
+- подтверждение или отклонение teacher application
+
+---
+
+### PAYMENT FLOW PAGES
+
+#### `/payment/success`
+Использует:
+- `POST /payments/paypal/orders/capture`
+
+Назначение:
+- финализация PayPal course payment после approve
+
+---
+
+#### `/payment/cancel`
+Использует:
+- backend endpoint не требуется
+
+Назначение:
+- страница отменённой оплаты
+
+---
+
+### SUBSCRIPTION FLOW PAGES
+
+#### `/subscription/success`
+Использует:
+- `POST /subscriptions/paypal/confirm`
+
+Опционально:
+- `POST /subscriptions/paypal/save-pending`
+
+Назначение:
+- финализация PayPal subscription после approve
+
+---
+
+#### `/subscription/cancel`
+Использует:
+- backend endpoint не требуется
+
+Назначение:
+- страница отменённой подписки
+
+---
+
+### CERTIFICATES
+
+#### `/student/certificates`
+Использует:
+- `GET /api/certificates/{certificateId}` *(или будущий endpoint списка сертификатов)*
+
+Назначение:
+- просмотр сертификатов студента
+
+---
+
+#### `/student/certificates/:certificateId`
+Использует:
+- `GET /api/certificates/{certificateId}`
+- `GET /api/certificates/verify/{verificationCode}`
+
+Назначение:
+- просмотр сертификата
+- проверка подлинности сертификата
+
+---
+
+### FILE ACCESS
+
+#### Любая страница с видео, PDF, thumbnail, resume preview
+Использует:
+- `GET /files?path=...`
+
+Назначение:
+- получение загруженных файлов
+- отображение thumbnail
+- открытие lecture PDF
+- загрузка video content
+
+---
+
+## Full Backend Endpoint List
+
+### AUTH
+- `POST /auth/register`
+- `POST /auth/login`
+- `POST /auth/verify`
+
+### TEACHER APPLICATIONS
+- `POST /teacher-applications`
+- `GET /teacher-applications`
+- `GET /teacher-applications/pending`
+- `POST /teacher-applications/{applicationId}/approve`
+- `POST /teacher-applications/{applicationId}/reject`
+
+### COURSES
+- `POST /courses`
+- `GET /courses/my`
+- `GET /courses/{courseId}`
+- `PUT /courses/{courseId}`
+- `DELETE /courses/{courseId}`
+
+### LESSONS
+- `POST /lessons/course/{courseId}`
+- `GET /lessons/course/{courseId}`
+- `GET /lessons/{lessonId}`
+- `PUT /lessons/{lessonId}`
+- `DELETE /lessons/{lessonId}`
+
+### QUIZZES
+- `POST /quizzes/lesson/{lessonId}`
+- `GET /quizzes/lesson/{lessonId}`
+- `GET /quizzes/{quizId}`
+- `PUT /quizzes/{quizId}`
+- `DELETE /quizzes/{quizId}`
+
+### PAYMENTS
+- `POST /payments/paypal/orders/course/{courseId}`
+- `POST /payments/paypal/orders/capture`
+- `GET /payments/paypal/my`
+
+### SUBSCRIPTIONS
+- `GET /subscriptions/paypal/plan`
+- `POST /subscriptions/paypal/confirm`
+- `POST /subscriptions/paypal/save-pending`
+- `GET /subscriptions/paypal/my`
+
+### ENROLLMENTS
+- `POST /enrollments/free/{courseId}`
+- `GET /enrollments/check/{courseId}`
+- `GET /enrollments/my`
+
+### CERTIFICATES
+- `POST /api/certificates/issue?userId=USER_ID&courseId=COURSE_ID`
+- `POST /api/certificates/{certificateId}/regenerate`
+- `GET /api/certificates/{certificateId}`
+- `GET /api/certificates/verify/{verificationCode}`
+
+### FILES
+- `GET /files?path=...`
 
 
 ##  Status
