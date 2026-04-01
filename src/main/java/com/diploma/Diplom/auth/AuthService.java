@@ -92,15 +92,21 @@ public class AuthService {
 
         if (!user.isEnabled()) {
             throw new RuntimeException("Account is not verified");
-        }
+       }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid password");
+        throw new RuntimeException("Invalid password");
         }
 
         String token = jwtService.generateToken(user);
 
-        return new AuthResponse(token);
+        return new AuthResponse(
+                token,
+                user.getRole().name(),
+                user.isTeacherApproved(),
+                user.getEmail(),
+                user.getName()
+        );
     }
 
     private String generateCode() {

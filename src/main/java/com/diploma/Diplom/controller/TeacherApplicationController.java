@@ -86,5 +86,11 @@ public TeacherApplication submitApplication(
                         "inline; filename=\"" + file.getFileName().toString() + "\"")
                 .contentType(MediaType.APPLICATION_PDF)
             .body(resource);
-}
+    }
+
+    @GetMapping("/my")
+    @PreAuthorize("hasRole('TEACHER')")
+    public TeacherApplication getMyApplication(java.security.Principal principal) {
+        return teacherApplicationService.getMyApplication(principal.getName());
+    }
 }

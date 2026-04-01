@@ -89,4 +89,9 @@ public class CourseController {
         courseService.deleteCourse(authentication.getName(), courseId);
         return "Course deleted successfully";
     }
+
+    @GetMapping("/public")
+    public List<Course> getPublicCourses() {
+        return courseService.getPublicCourses();
+    }
 }

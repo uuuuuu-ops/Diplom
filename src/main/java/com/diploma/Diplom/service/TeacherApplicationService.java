@@ -165,5 +165,17 @@ public class TeacherApplicationService {
         PDFTextStripper stripper = new PDFTextStripper();
         return stripper.getText(document);
     }
+    }
+
+    public TeacherApplication getMyApplication(String teacherEmail) {
+    User user = userRepository.findByEmail(teacherEmail)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    if (user.getRole() != Role.TEACHER) {
+        throw new RuntimeException("Only teachers can view teacher application status");
+    }
+
+    return teacherApplicationRepository.findByUserId(user.getId())
+            .orElseThrow(() -> new RuntimeException("Application not found"));
 }
 }

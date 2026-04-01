@@ -142,4 +142,9 @@ public class CourseService {
             throw new RuntimeException("You can manage only your own courses");
         }
     }
+
+    public List<Course> getPublicCourses() {
+    return courseRepository.findByPublishedTrue();
+}
+
 }
