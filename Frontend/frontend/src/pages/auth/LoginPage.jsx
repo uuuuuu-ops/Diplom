@@ -18,7 +18,7 @@ function getRedirectByRole(role, teacherApproved) {
     if (typeof teacherApproved === "undefined") {
       return "/teacher/apply";
     }
-    return teacherApproved ? "/teacher/courses" : "/teacher-applications/my";
+    return teacherApproved ? "/teacher/courses" : "/teacher/application-status";
   }
 
   return "/student/courses";

@@ -33,4 +33,7 @@ public class Lesson {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    private String videoPublicId;
+    private String lecturePdfPublicId;
 }

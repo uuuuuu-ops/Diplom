@@ -51,6 +51,10 @@ export default function TeacherApplyPage() {
 
       console.log("SUBMIT RESPONSE:", response.data);
       setSuccess("Application submitted successfully.");
+
+      setTimeout(() => {
+      window.location.href = "/teacher/application-status";
+      }, 800);
     } catch (err) {
       console.error("Teacher application failed:", err);
       console.error("Teacher application response:", err?.response);

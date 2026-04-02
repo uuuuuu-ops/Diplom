@@ -20,16 +20,16 @@ public class CourseService {
     private final CourseRepository courseRepository;
     private final LessonRepository lessonRepository;
     private final UserRepository userRepository;
-    private final FileStorageService fileStorageService;
+    private final CloudinaryService cloudinaryService;
 
     public CourseService(CourseRepository courseRepository,
                          LessonRepository lessonRepository,
                          UserRepository userRepository,
-                         FileStorageService fileStorageService) {
+                         CloudinaryService cloudinaryService) {
         this.courseRepository = courseRepository;
         this.lessonRepository = lessonRepository;
         this.userRepository = userRepository;
-        this.fileStorageService = fileStorageService;
+        this.cloudinaryService = cloudinaryService;
     }
 
    public Course createCourse(String teacherEmail,
@@ -62,11 +62,10 @@ public class CourseService {
     course.setCreatedAt(LocalDateTime.now());
     course.setUpdatedAt(LocalDateTime.now());
 
-    if (thumbnailFile != null && !thumbnailFile.isEmpty()) {
-        FileStorageService.FileUploadResult uploaded =
-                fileStorageService.saveFile(thumbnailFile, "thumbnails");
-        course.setThumbnail(uploaded.getFileUrl());
-    }
+    CloudinaryService.FileUploadResult uploaded =
+        cloudinaryService.uploadFile(thumbnailFile, "thumbnails");
+    course.setThumbnail(uploaded.getFileUrl());
+    course.setThumbnailPublicId(uploaded.getPublicId()); 
 
     return courseRepository.save(course);
 }
@@ -98,13 +97,13 @@ public class CourseService {
         if (request.getLevel() != null) course.setLevel(request.getLevel());
         if (request.getPublished() != null) course.setPublished(request.getPublished());
 
-        if (thumbnailFile != null && !thumbnailFile.isEmpty()) {
-            fileStorageService.deleteFile(course.getThumbnail());
-
-            FileStorageService.FileUploadResult uploaded =
-                    fileStorageService.saveFile(thumbnailFile, "thumbnails");
-            course.setThumbnail(uploaded.getFileUrl());
+        if (course.getThumbnailPublicId() != null) {
+            cloudinaryService.deleteFile(course.getThumbnailPublicId());
         }
+        CloudinaryService.FileUploadResult uploaded =
+                cloudinaryService.uploadFile(thumbnailFile, "thumbnails");
+        course.setThumbnail(uploaded.getFileUrl());
+        course.setThumbnailPublicId(uploaded.getPublicId());
 
         course.setUpdatedAt(LocalDateTime.now());
         return courseRepository.save(course);
@@ -118,7 +117,9 @@ public class CourseService {
 
         validateCourseOwnership(user, course);
 
-        fileStorageService.deleteFile(course.getThumbnail());
+        if (course.getThumbnailPublicId() != null) {
+            cloudinaryService.deleteFile(course.getThumbnailPublicId());
+        }        
         lessonRepository.deleteAll(lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId));
         courseRepository.delete(course);
     }

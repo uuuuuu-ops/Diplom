@@ -34,7 +34,7 @@ public class CourseController {
                                @RequestParam(required = false) Boolean free,
                                @RequestParam(required = false) BigDecimal price) {
         
-
+        System.out.println("=== CREATE COURSE HIT ATLAS BACKEND ===");
         System.out.println("price = " + price);
 
 

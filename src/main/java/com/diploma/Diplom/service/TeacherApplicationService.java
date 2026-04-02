@@ -14,13 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class TeacherApplicationService {
@@ -28,13 +24,16 @@ public class TeacherApplicationService {
     private final TeacherApplicationRepository teacherApplicationRepository;
     private final UserRepository userRepository;
     private final OpenAiResumeAnalysisService openAiResumeAnalysisService;
+    private final CloudinaryService cloudinaryService; // ← добавили
 
     public TeacherApplicationService(TeacherApplicationRepository teacherApplicationRepository,
                                      UserRepository userRepository,
-                                     OpenAiResumeAnalysisService openAiResumeAnalysisService) {
+                                     OpenAiResumeAnalysisService openAiResumeAnalysisService,
+                                     CloudinaryService cloudinaryService) { // ← добавили
         this.teacherApplicationRepository = teacherApplicationRepository;
         this.userRepository = userRepository;
         this.openAiResumeAnalysisService = openAiResumeAnalysisService;
+        this.cloudinaryService = cloudinaryService;
     }
 
     public TeacherApplication submitApplication(TeacherApplicationRequest request, MultipartFile resumeFile) {
@@ -63,29 +62,29 @@ public class TeacherApplicationService {
         }
 
         try {
-            String uploadDir = "uploads/resumes";
-            Files.createDirectories(Paths.get(uploadDir));
+            // 1. Сначала извлекаем текст из PDF (до загрузки в Cloudinary)
+            String resumeText = extractTextFromPdfStream(resumeFile.getInputStream());
 
-            String safeFileName = UUID.randomUUID() + "_" + originalFileName.replaceAll("\\s+", "_");
-            Path filePath = Paths.get(uploadDir, safeFileName);
+            // 2. Загружаем PDF в Cloudinary
+            CloudinaryService.FileUploadResult uploaded =
+                    cloudinaryService.uploadFile(resumeFile, "resumes");
 
-            Files.copy(resumeFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-            String resumeText = extractTextFromPdf(filePath);
-
+            // 3. Анализируем резюме через AI
             ResumeAnalysisResult analysis = openAiResumeAnalysisService.analyzeResume(
                     resumeText,
                     request.getSpecialization(),
                     request.getYearsOfExperience()
             );
 
+            // 4. Сохраняем заявку
             TeacherApplication application = new TeacherApplication();
             application.setUserId(user.getId());
             application.setFullName(request.getFullName());
             application.setEmail(user.getEmail());
             application.setResumeText(resumeText);
             application.setResumeFileName(originalFileName);
-            application.setResumeFileUrl(filePath.toString());
+            application.setResumeFileUrl(uploaded.getFileUrl());       // ← Cloudinary URL
+            application.setResumePublicId(uploaded.getPublicId());     // ← для удаления
             application.setSpecialization(request.getSpecialization());
             application.setYearsOfExperience(request.getYearsOfExperience());
             application.setStatus("PENDING");
@@ -104,6 +103,14 @@ public class TeacherApplicationService {
         }
     }
 
+    // ← новый метод — читает из InputStream без сохранения на диск
+    private String extractTextFromPdfStream(InputStream inputStream) throws IOException {
+        try (PDDocument document = PDDocument.load(inputStream)) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            return stripper.getText(document);
+        }
+    }
+
     public List<TeacherApplication> getAllApplications() {
         return teacherApplicationRepository.findAll();
     }
@@ -113,31 +120,21 @@ public class TeacherApplicationService {
     }
 
     public TeacherApplication approveApplication(String applicationId, String reviewComment) {
-    System.out.println("APPROVE START: " + applicationId);
+        TeacherApplication application = teacherApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new RuntimeException("Teacher application not found"));
 
-    TeacherApplication application = teacherApplicationRepository.findById(applicationId)
-            .orElseThrow(() -> new RuntimeException("Teacher application not found"));
+        User user = userRepository.findById(application.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-    System.out.println("APPLICATION FOUND: " + application.getId());
-    System.out.println("APPLICATION USER ID: " + application.getUserId());
+        application.setStatus("APPROVED");
+        application.setReviewComment(reviewComment);
 
-    User user = userRepository.findById(application.getUserId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setTeacherApproved(true);
+        user.setRole(Role.TEACHER);
 
-    System.out.println("USER FOUND: " + user.getId() + " / " + user.getEmail());
-
-    application.setStatus("APPROVED");
-    application.setReviewComment(reviewComment);
-
-    user.setTeacherApproved(true);
-    user.setRole(Role.TEACHER);
-
-    userRepository.save(user);
-    TeacherApplication saved = teacherApplicationRepository.save(application);
-
-    System.out.println("APPROVE SUCCESS: " + saved.getStatus());
-    return saved;
-}
+        userRepository.save(user);
+        return teacherApplicationRepository.save(application);
+    }
 
     public TeacherApplication rejectApplication(String applicationId, String reviewComment) {
         TeacherApplication application = teacherApplicationRepository.findById(applicationId)
@@ -160,22 +157,15 @@ public class TeacherApplicationService {
                 .orElseThrow(() -> new RuntimeException("Teacher application not found"));
     }
 
-    private String extractTextFromPdf(Path filePath) throws IOException {
-    try (PDDocument document = PDDocument.load(filePath.toFile())) {
-        PDFTextStripper stripper = new PDFTextStripper();
-        return stripper.getText(document);
-    }
-    }
-
     public TeacherApplication getMyApplication(String teacherEmail) {
-    User user = userRepository.findByEmail(teacherEmail)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByEmail(teacherEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-    if (user.getRole() != Role.TEACHER) {
-        throw new RuntimeException("Only teachers can view teacher application status");
+        if (user.getRole() != Role.TEACHER) {
+            throw new RuntimeException("Only teachers can view teacher application status");
+        }
+
+        return teacherApplicationRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new RuntimeException("Application not found"));
     }
-
-    return teacherApplicationRepository.findByUserId(user.getId())
-            .orElseThrow(() -> new RuntimeException("Application not found"));
-}
 }

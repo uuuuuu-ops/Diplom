@@ -32,4 +32,6 @@ public class Course {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    private String thumbnailPublicId;
 }

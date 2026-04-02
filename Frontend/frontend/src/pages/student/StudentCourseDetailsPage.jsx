@@ -1,204 +1,186 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, PlayCircle, Lock, FileText, Star } from "lucide-react";
-import { useParams } from "react-router-dom";
-import { getCourseById } from "../../services/courseService";
-
-const lessons = [
-  { id: 1, title: "Introduction to the course", duration: "12 min", free: true },
-  { id: 2, title: "Spring Boot project setup", duration: "24 min", free: true },
-  { id: 3, title: "Controllers and routing", duration: "31 min", free: false },
-  { id: 4, title: "Service layer and business logic", duration: "28 min", free: false },
-  { id: 5, title: "Quiz and knowledge check", duration: "15 min", free: false },
-];
+import { Link, useParams } from "react-router-dom";
+import {
+  getCourseById,
+  getLessonsByCourseId,
+} from "../../services/courseService";
 
 export default function StudentCourseDetailsPage() {
   const { courseId } = useParams();
+
   const [course, setCourse] = useState(null);
+  const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    async function loadCourse() {
-      try {
-        setLoading(true);
-        setError("");
+  async function loadData() {
+    try {
+      setLoading(true);
+      setError("");
 
-        const data = await getCourseById(courseId);
-        setCourse(data);
-      } catch (err) {
-        console.error("Failed to load course:", err);
-        setError("Failed to load course");
-      } finally {
-        setLoading(false);
-      }
+      const [courseData, lessonsData] = await Promise.all([
+        getCourseById(courseId),
+        getLessonsByCourseId(courseId),
+      ]);
+
+      setCourse(courseData);
+      setLessons(
+        (lessonsData || []).slice().sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+      );
+    } catch (err) {
+      console.error("Failed to load course page:", err);
+      console.error("STATUS:", err.response?.status);
+      console.error("DATA:", err.response?.data);
+      setError(err.response?.data?.message || "Failed to load course");
+    } finally {
+      setLoading(false);
     }
+  }
 
-    loadCourse();
+  useEffect(() => {
+    loadData();
   }, [courseId]);
 
   if (loading) {
-    return (
-      <div className="px-6 py-10">
-        <div className="mx-auto max-w-7xl rounded-2xl border border-white/10 bg-white/5 p-6 text-slate-300">
-          Loading course...
-        </div>
-      </div>
-    );
+    return <div className="p-6 text-white">Loading course...</div>;
   }
 
-  if (error || !course) {
-    return (
-      <div className="px-6 py-10">
-        <div className="mx-auto max-w-7xl rounded-2xl border border-red-400/20 bg-red-400/10 p-6 text-red-200">
-          {error || "Course not found"}
-        </div>
-      </div>
-    );
+  if (error) {
+    return <div className="p-6 text-red-400">{error}</div>;
+  }
+
+  if (!course) {
+    return <div className="p-6 text-white">Course not found</div>;
   }
 
   return (
-    <div className="px-6 py-10">
-      <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.5fr_420px]">
-        <div>
-          <div className="mb-6 rounded-[32px] border border-white/10 bg-gradient-to-br from-blue-500/20 via-cyan-400/10 to-transparent p-8">
-            <div className="mb-4 inline-flex rounded-full bg-blue-400/15 px-4 py-2 text-sm font-semibold text-blue-200">
-              {course.category || "General"}
-            </div>
+    <div className="min-h-screen bg-[#071a2f] px-6 py-10 text-white">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-8 lg:grid-cols-[1.4fr_0.8fr]">
+          <div>
+            <div className="mb-8 rounded-3xl border border-white/10 bg-white/5 p-6">
+              <h1 className="text-4xl font-bold">{course.title}</h1>
+              <p className="mt-4 max-w-3xl text-white/70">{course.description}</p>
 
-            <h1 className="text-4xl font-bold text-white md:text-5xl">
-              {course.title}
-            </h1>
-
-            <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-300">
-              {course.description || "No description available."}
-            </p>
-
-            <div className="mt-6 flex flex-wrap gap-6 text-sm text-slate-300">
-              <div className="flex items-center gap-2">
-                <Star size={16} className="text-yellow-300" />
-                4.8 rating
+              <div className="mt-6 flex flex-wrap gap-3">
+                <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
+                  {course.level || "BEGINNER"}
+                </span>
+                <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
+                  {course.free ? "Free" : `${course.price ?? 0} USD`}
+                </span>
+                <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
+                  {lessons.length} lessons
+                </span>
               </div>
-              <div>{course.level || "Unknown"} level</div>
-              <div>{course.free ? "Free course" : "Paid course"}</div>
-              <div>{course.currency || "USD"}</div>
             </div>
-          </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-[#0d1b2a]/80 p-6">
-            <h2 className="text-2xl font-bold text-white">What you will learn</h2>
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+              <h2 className="text-3xl font-bold">Course content</h2>
+              <p className="mt-2 text-white/60">
+                Structured lessons and course resources.
+              </p>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              {[
-                "Understand the full learning flow",
-                "Study structured lessons and resources",
-                "Practice with quizzes and exercises",
-                "Track progress across the course",
-                "Access course materials in one place",
-                "Prepare for certification and completion",
-              ].map((item) => (
-                <div
-                  key={item}
-                  className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4"
-                >
-                  <CheckCircle2 size={18} className="mt-1 text-emerald-300" />
-                  <span className="text-slate-200">{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-8 rounded-[28px] border border-white/10 bg-[#0d1b2a]/80 p-6">
-            <h2 className="text-2xl font-bold text-white">Course content</h2>
-            <p className="mt-2 text-slate-400">Structured lessons with locked and free previews.</p>
-
-            <div className="mt-6 space-y-4">
-              {lessons.map((lesson) => (
-                <div
-                  key={lesson.id}
-                  className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="rounded-2xl bg-blue-500/15 p-3 text-blue-300">
-                      {lesson.free ? <PlayCircle size={20} /> : <Lock size={20} />}
-                    </div>
-
-                    <div>
-                      <div className="font-semibold text-white">{lesson.title}</div>
-                      <div className="text-sm text-slate-400">{lesson.duration}</div>
-                    </div>
+              <div className="mt-6 space-y-4">
+                {lessons.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-white/10 p-6 text-white/60">
+                    No lessons yet
                   </div>
+                ) : (
+                  lessons.map((lesson, index) => {
+                    const isPreview = index < 2 || lesson.preview === true;
+                    const isLocked = !isPreview && !course.free;
 
-                  <div className="flex items-center gap-3">
-                    {lesson.free && (
-                      <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
-                        Preview
-                      </span>
-                    )}
+                    return (
+                      <div
+                        key={lesson.id}
+                        className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 p-4"
+                      >
+                        <div className="flex min-w-0 items-center gap-4">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-500/20 text-lg">
+                            {isLocked ? "🔒" : "▶"}
+                          </div>
 
-                    <button className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-200 hover:bg-white/5">
-                      Open
-                    </button>
-                  </div>
-                </div>
-              ))}
+                          <div className="min-w-0">
+                            <h3 className="truncate text-lg font-semibold">
+                              {lesson.title}
+                            </h3>
+                            <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-white/60">
+                              <span>{lesson.duration ?? 0} min</span>
+                              {isPreview && (
+                                <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-xs text-emerald-300">
+                                  Preview
+                                </span>
+                              )}
+                              {lesson.published === false && (
+                                <span className="rounded-full bg-yellow-500/15 px-2 py-1 text-xs text-yellow-300">
+                                  Draft
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {isLocked ? (
+                          <button
+                            type="button"
+                            className="rounded-xl border border-white/10 px-4 py-2 text-sm text-white/80"
+                          >
+                            Locked
+                          </button>
+                        ) : (
+                          <Link
+                            to={`/student/courses/${courseId}/lessons/${lesson.id}`}
+                            className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-500"
+                          >
+                            Open
+                          </Link>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        <aside className="h-fit rounded-[28px] border border-white/10 bg-[#10233a] p-6 shadow-2xl">
-          <div className="h-52 overflow-hidden rounded-[24px] bg-gradient-to-br from-blue-500/30 via-cyan-400/20 to-transparent">
-            {course.thumbnail ? (
-              <img
-                src={course.thumbnail.startsWith("http") ? course.thumbnail : `http://localhost:8080${course.thumbnail}`}
-                alt={course.title}
-                className="h-full w-full object-cover"
-              />
-            ) : null}
-          </div>
+          <div>
+            <div className="sticky top-6 rounded-3xl border border-white/10 bg-white/5 p-6">
+              <div className="mb-6 text-4xl font-bold">
+                {course.free ? "Free" : `${course.price ?? 0} USD`}
+              </div>
 
-          <div className="mt-6">
-            <div className="text-sm text-slate-400">Price</div>
-            <div className="mt-1 text-4xl font-bold text-white">
-              {course.free
-                ? "Free"
-                : `${course.price ?? ""} ${course.currency ?? ""}`.trim() || "Paid"}
-            </div>
-
-            <div className="mt-6 space-y-3">
-              <button className="w-full rounded-2xl bg-blue-500 px-4 py-3 font-semibold text-white transition hover:bg-blue-400">
-                {course.free ? "Enroll for Free" : "Buy Course"}
+              <button className="mb-3 w-full rounded-2xl bg-blue-600 px-4 py-3 font-semibold hover:bg-blue-500">
+                {course.free ? "Start Course" : "Buy Course"}
               </button>
 
               {!course.free && (
-                <button className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 font-semibold text-slate-200 transition hover:bg-white/10">
+                <button className="mb-6 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 font-semibold hover:bg-white/10">
                   Subscribe for Access
                 </button>
               )}
-            </div>
 
-            <div className="mt-6 space-y-4 text-sm text-slate-300">
-              <div className="flex items-center justify-between">
-                <span>Access type</span>
-                <span className="text-white">{course.free ? "Free" : "Paid / Subscription"}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Resources</span>
-                <span className="inline-flex items-center gap-2 text-white">
-                  <FileText size={16} />
-                  Files included
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Certificate</span>
-                <span className="text-white">Available</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Level</span>
-                <span className="text-white">{course.level || "Unknown"}</span>
+              <div className="space-y-4 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-white/60">Access type</span>
+                  <span>{course.free ? "Free" : "Paid / Subscription"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white/60">Lessons</span>
+                  <span>{lessons.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white/60">Level</span>
+                  <span>{course.level || "BEGINNER"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white/60">Certificate</span>
+                  <span>Available</span>
+                </div>
               </div>
             </div>
           </div>
-        </aside>
+        </div>
       </div>
     </div>
   );

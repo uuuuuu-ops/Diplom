@@ -38,7 +38,7 @@ public TeacherApplication submitApplication(
         @RequestParam("resumeFile") MultipartFile resumeFile
 ) {
     TeacherApplicationRequest request = new TeacherApplicationRequest();
-    request.setUserId(principal.getName()); // email из JWT → userId
+    request.setUserId(principal.getName()); 
     request.setFullName(fullName);
     request.setEmail(email);
     request.setSpecialization(specialization);

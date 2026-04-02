@@ -21,16 +21,16 @@ public class LessonService {
     private final LessonRepository lessonRepository;
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
-    private final FileStorageService fileStorageService;
+    private final CloudinaryService cloudinaryService; // ← заменили
 
     public LessonService(LessonRepository lessonRepository,
                          CourseRepository courseRepository,
                          UserRepository userRepository,
-                         FileStorageService fileStorageService) {
+                         CloudinaryService cloudinaryService) { // ← заменили
         this.lessonRepository = lessonRepository;
         this.courseRepository = courseRepository;
         this.userRepository = userRepository;
-        this.fileStorageService = fileStorageService;
+        this.cloudinaryService = cloudinaryService;
     }
 
     public Lesson addLessonToCourse(String teacherEmail,
@@ -57,18 +57,26 @@ public class LessonService {
         lesson.setUpdatedAt(LocalDateTime.now());
 
         if (videoFile != null && !videoFile.isEmpty()) {
-            FileStorageService.FileUploadResult uploaded =
-                    fileStorageService.saveFile(videoFile, "videos");
-            lesson.setVideoUrl(uploaded.getFileUrl());
-            lesson.setVideoFileName(uploaded.getFileName());
+        if (lesson.getVideoPublicId() != null) {
+            cloudinaryService.deleteFile(lesson.getVideoPublicId()); // ← publicId
         }
+        CloudinaryService.FileUploadResult uploaded =
+            cloudinaryService.uploadFile(videoFile, "videos");
+        lesson.setVideoUrl(uploaded.getFileUrl());
+        lesson.setVideoFileName(uploaded.getFileName());
+        lesson.setVideoPublicId(uploaded.getPublicId()); // ← сохраняем
+    }
 
         if (lecturePdfFile != null && !lecturePdfFile.isEmpty()) {
-            FileStorageService.FileUploadResult uploaded =
-                    fileStorageService.saveFile(lecturePdfFile, "lecture-pdfs");
-            lesson.setLecturePdfUrl(uploaded.getFileUrl());
-            lesson.setLecturePdfFileName(uploaded.getFileName());
-        }
+            if (lesson.getLecturePdfPublicId() != null) {
+                cloudinaryService.deleteFile(lesson.getLecturePdfPublicId());
+            }
+        CloudinaryService.FileUploadResult uploaded =
+                cloudinaryService.uploadFile(lecturePdfFile, "lecture-pdfs");
+        lesson.setLecturePdfUrl(uploaded.getFileUrl());
+        lesson.setLecturePdfFileName(uploaded.getFileName());
+        lesson.setLecturePdfPublicId(uploaded.getPublicId()); // ← сохраняем
+    }
 
         return lessonRepository.save(lesson);
     }
@@ -105,19 +113,21 @@ public class LessonService {
         if (request.getPublished() != null) lesson.setPublished(request.getPublished());
 
         if (videoFile != null && !videoFile.isEmpty()) {
-            fileStorageService.deleteFile(lesson.getVideoUrl());
-
-            FileStorageService.FileUploadResult uploaded =
-                    fileStorageService.saveFile(videoFile, "videos");
+            if (lesson.getVideoUrl() != null) {
+                cloudinaryService.deleteFile(lesson.getVideoUrl());
+            }
+            CloudinaryService.FileUploadResult uploaded =
+                    cloudinaryService.uploadFile(videoFile, "videos");
             lesson.setVideoUrl(uploaded.getFileUrl());
             lesson.setVideoFileName(uploaded.getFileName());
         }
 
         if (lecturePdfFile != null && !lecturePdfFile.isEmpty()) {
-            fileStorageService.deleteFile(lesson.getLecturePdfUrl());
-
-            FileStorageService.FileUploadResult uploaded =
-                    fileStorageService.saveFile(lecturePdfFile, "lecture-pdfs");
+            if (lesson.getLecturePdfUrl() != null) {
+                cloudinaryService.deleteFile(lesson.getLecturePdfUrl());
+            }
+            CloudinaryService.FileUploadResult uploaded =
+                    cloudinaryService.uploadFile(lecturePdfFile, "lecture-pdfs");
             lesson.setLecturePdfUrl(uploaded.getFileUrl());
             lesson.setLecturePdfFileName(uploaded.getFileName());
         }
@@ -137,9 +147,10 @@ public class LessonService {
 
         validateCourseOwnership(user, course);
 
-        fileStorageService.deleteFile(lesson.getVideoUrl());
-        fileStorageService.deleteFile(lesson.getLecturePdfUrl());
-
+        if (lesson.getVideoPublicId() != null) 
+            cloudinaryService.deleteFile(lesson.getVideoPublicId());
+        if (lesson.getLecturePdfPublicId() != null) 
+            cloudinaryService.deleteFile(lesson.getLecturePdfPublicId());
         lessonRepository.delete(lesson);
     }
 
@@ -153,7 +164,6 @@ public class LessonService {
         if (!user.isTeacherApproved()) {
             throw new RuntimeException("Only approved teachers can manage lessons");
         }
-
         return user;
     }
 

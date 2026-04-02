@@ -13,6 +13,8 @@ import TeacherApplyPage from "../pages/teacher/TeacherApplyPage";
 import TeacherApplicationStatusPage from "../pages/teacher/TeacherApplicationStatusPage";
 import TeacherCoursesPage from "../pages/teacher/TeacherCoursesPage";
 import CreateCoursePage from "../pages/teacher/CreateCoursePage";
+import EditLessonPage from "../pages/teacher/EditLessonPage";
+import EditCoursePage from "../pages/teacher/EditCoursePage";
 
 import UnauthorizedPage from "../pages/system/UnauthorizedPage";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
@@ -53,6 +55,15 @@ export default function AppRouter() {
           />
 
           <Route
+          path="/teacher/courses/:courseId/edit"
+          element={
+            <ProtectedRoute allowedRoles={["TEACHER"]}>
+              <EditCoursePage />
+            </ProtectedRoute>
+          }
+          />
+
+          <Route
             path="/teacher/apply"
             element={
               <ProtectedRoute allowedRoles={["TEACHER"]}>
@@ -89,13 +100,13 @@ export default function AppRouter() {
           />
 
           <Route
-            path="/teacher/courses/:courseId/edit"
-            element={
-              <ProtectedRoute allowedRoles={["TEACHER"]}>
-                <Placeholder title="Edit Course Page" />
-              </ProtectedRoute>
-            }
-          />
+          path="/teacher/courses/:courseId/lessons/:lessonId/edit"
+          element={
+            <ProtectedRoute allowedRoles={["TEACHER"]}>
+              <EditLessonPage />
+            </ProtectedRoute>
+          }
+        />
 
           <Route
           path="/teacher/courses/:courseId/lessons/new"

@@ -46,3 +46,27 @@ export async function createLesson(courseId, formData) {
   });
   return response.data;
 }
+
+export async function getLessonsByCourseId(courseId) {
+  const response = await api.get(`/lessons/course/${courseId}`);
+  return response.data;
+}
+
+export async function getLessonById(lessonId) {
+  const response = await api.get(`/lessons/${lessonId}`);
+  return response.data;
+}
+
+export async function updateLesson(lessonId, formData) {
+  const response = await api.put(`/lessons/${lessonId}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+}
+
+export async function deleteLesson(lessonId) {
+  const response = await api.delete(`/lessons/${lessonId}`);
+  return response.data;
+}
