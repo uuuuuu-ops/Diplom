@@ -1,278 +1,135 @@
 package com.diploma.Diplom.service;
 
 import com.diploma.Diplom.dto.ResumeAnalysisResult;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.Map;
+import java.time.Duration;
 
 @Service
 public class OpenAiResumeAnalysisService {
 
-    private static final List<String> EDUCATION_KEYWORDS = List.of(
-            "education", "academic", "university", "college", "degree", "bachelor", "master", "phd",
-            "образование", "университет", "колледж", "бакалавр", "магистр", "докторант", "диплом"
-    );
+    @Value("${ai.resume.api.url}")
+    private String aiApiUrl;
 
-    private static final List<String> TEACHING_KEYWORDS = List.of(
-            "teaching", "teacher", "tutor", "lecturer", "instructor", "mentor", "training", "pedagogy",
-            "преподав", "учител", "обуч", "лектор", "наставник", "ментор", "педагог"
-    );
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(30))
+            .build();
 
-    private static final List<String> EXPERIENCE_KEYWORDS = List.of(
-            "experience", "work experience", "employment", "career", "worked", "internship",
-            "опыт", "опыт работы", "стаж", "карьера", "работал", "работала", "стажировка"
-    );
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private static final List<String> SKILLS_KEYWORDS = List.of(
-            "skills", "technical skills", "competencies", "stack", "technologies",
-            "навыки", "компетенции", "технологии", "стек"
-    );
+    public ResumeAnalysisResult analyzeResume(
+            String resumeText,
+            String specialization,
+            int yearsOfExperience) {
 
-    private static final List<String> PROJECTS_KEYWORDS = List.of(
-            "projects", "project", "portfolio",
-            "проекты", "проект", "портфолио"
-    );
+        try {
+            Map<String, Object> requestBody = Map.of(
+                    "resumeText", resumeText != null ? resumeText : "",
+                    "specialization", specialization != null ? specialization : "",
+                    "yearsOfExperience", yearsOfExperience,
+                    "education", extractEducation(resumeText),
+                    "certifications", extractCertifications(resumeText),
+                    "projectsCount", extractProjectsCount(resumeText)
+            );
 
-    private static final List<String> CONTACT_KEYWORDS = List.of(
-            "email", "phone", "telegram", "linkedin", "github", "contact",
-            "почта", "телефон", "контакт", "связь"
-    );
+            String json = objectMapper.writeValueAsString(requestBody);
 
-    private static final List<String> JAVA_KEYWORDS = List.of(
-            "java", "core java", "java se", "java ee"
-    );
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(aiApiUrl + "/analyze"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .timeout(Duration.ofSeconds(30))
+                    .build();
 
-    private static final List<String> SPRING_KEYWORDS = List.of(
-            "spring", "spring boot", "spring mvc", "spring data", "spring security"
-    );
+            HttpResponse<String> response = httpClient.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofString()
+            );
 
-    private static final List<String> DATABASE_KEYWORDS = List.of(
-            "sql", "mysql", "postgresql", "mongodb", "database", "oracle", "sqlite",
-            "база данных", "бд"
-    );
+            if (response.statusCode() == 200) {
+                return parseResponse(response.body());
+            } else {
+                System.err.println("AI API error: " + response.statusCode() + " " + response.body());
+                return fallbackResult(resumeText, specialization, yearsOfExperience);
+            }
 
-    private static final List<String> BACKEND_KEYWORDS = List.of(
-            "backend", "rest api", "api", "microservices", "server-side",
-            "бэкенд", "сервер", "микросервис"
-    );
+        } catch (Exception e) {
+            System.err.println("AI API unavailable: " + e.getMessage());
+            return fallbackResult(resumeText, specialization, yearsOfExperience);
+        }
+    }
 
-    private static final List<String> CERTIFICATION_KEYWORDS = List.of(
-            "certificate", "certification", "certified",
-            "сертификат", "сертификация"
-    );
-
-    public ResumeAnalysisResult analyzeResume(String resumeText, String specialization, int yearsOfExperience) {
+    private ResumeAnalysisResult parseResponse(String json) throws Exception {
+        var node = objectMapper.readTree(json);
         ResumeAnalysisResult result = new ResumeAnalysisResult();
-
-        String text = normalize(resumeText);
-
-        boolean hasEducation = containsAny(text, EDUCATION_KEYWORDS);
-        boolean hasTeaching = containsAny(text, TEACHING_KEYWORDS);
-        boolean hasExperience = containsAny(text, EXPERIENCE_KEYWORDS);
-        boolean hasSkills = containsAny(text, SKILLS_KEYWORDS);
-        boolean hasProjects = containsAny(text, PROJECTS_KEYWORDS);
-        boolean hasContacts = containsAny(text, CONTACT_KEYWORDS);
-
-        boolean hasJava = containsAny(text, JAVA_KEYWORDS);
-        boolean hasSpring = containsAny(text, SPRING_KEYWORDS);
-        boolean hasDatabase = containsAny(text, DATABASE_KEYWORDS);
-        boolean hasBackend = containsAny(text, BACKEND_KEYWORDS);
-        boolean hasCertification = containsAny(text, CERTIFICATION_KEYWORDS);
-
-        int score = 0;
-
-        // Base completeness
-        if (!text.isBlank()) score += 10;
-        if (text.length() >= 200) score += 10;
-        if (text.length() >= 500) score += 10;
-        if (text.length() >= 900) score += 5;
-
-        // Structure
-        if (hasContacts) score += 5;
-        if (hasEducation) score += 10;
-        if (hasExperience) score += 10;
-        if (hasSkills) score += 10;
-        if (hasProjects) score += 5;
-
-        // Teaching profile
-        if (hasTeaching) score += 15;
-
-        // Technical profile
-        if (hasJava) score += 5;
-        if (hasSpring) score += 5;
-        if (hasDatabase) score += 5;
-        if (hasBackend) score += 5;
-
-        // Certifications
-        if (hasCertification) score += 5;
-
-        // Experience years
-        if (yearsOfExperience >= 1) score += 5;
-        if (yearsOfExperience >= 3) score += 5;
-        if (yearsOfExperience >= 5) score += 5;
-
-        // Specialization filled
-        if (specialization != null && !specialization.isBlank()) {
-            score += 5;
-        }
-
-        if (score > 100) {
-            score = 100;
-        }
-
-        result.setScore(score);
-        result.setSummary(buildSummary(score, hasTeaching, hasEducation, hasExperience, hasJava, hasSpring, yearsOfExperience, specialization));
-        result.setStrengths(buildStrengths(hasContacts, hasEducation, hasExperience, hasSkills, hasProjects,
-                hasTeaching, hasJava, hasSpring, hasDatabase, hasBackend, hasCertification, yearsOfExperience));
-        result.setWeaknesses(buildWeaknesses(text, hasContacts, hasEducation, hasExperience, hasSkills, hasProjects,
-                hasTeaching, hasCertification, yearsOfExperience));
-        result.setRecommendation(buildRecommendation(score, hasTeaching, hasEducation, hasExperience));
-
+        result.setScore(node.get("score").asInt());
+        result.setRecommendation(node.get("recommendation").asText());
+        result.setSummary(node.get("summary").asText());
+        result.setStrengths(node.get("strengths").asText());
+        result.setWeaknesses(node.get("weaknesses").asText());
         return result;
     }
 
-    private String normalize(String text) {
-        if (text == null) {
-            return "";
-        }
+    private ResumeAnalysisResult fallbackResult(
+            String resumeText,
+            String specialization,
+            int yearsOfExperience) {
 
-        return text.toLowerCase()
-                .replace('\n', ' ')
-                .replace('\r', ' ')
-                .replaceAll("\\s+", " ")
-                .trim();
+        ResumeAnalysisResult result = new ResumeAnalysisResult();
+        int score = 30;
+        if (yearsOfExperience >= 1) score += 15;
+        if (yearsOfExperience >= 3) score += 15;
+        if (resumeText != null && resumeText.length() > 300) score += 20;
+        if (specialization != null && !specialization.isBlank()) score += 10;
+        score = Math.min(score, 100);
+
+        result.setScore(score);
+        result.setSummary("Базовый анализ (AI сервис недоступен). Опыт: " + yearsOfExperience + " лет.");
+        result.setStrengths(yearsOfExperience >= 2 ? "Есть опыт работы." : "Начинающий кандидат.");
+        result.setWeaknesses(yearsOfExperience < 1 ? "Нет опыта работы." : "");
+        result.setRecommendation(score >= 70 ? "GOOD_FIT" : score >= 50 ? "NEEDS_REVIEW" : "WEAK_FIT");
+        return result;
     }
 
-    private boolean containsAny(String text, List<String> keywords) {
-        for (String keyword : keywords) {
-            if (text.contains(keyword.toLowerCase())) {
-                return true;
+    private String extractEducation(String text) {
+        if (text == null) return "B.Sc";
+        String lower = text.toLowerCase();
+        if (lower.contains("phd") || lower.contains("doctorate")) return "PhD";
+        if (lower.contains("m.tech") || lower.contains("master")) return "M.Tech";
+        if (lower.contains("mba")) return "MBA";
+        if (lower.contains("b.tech")) return "B.Tech";
+        return "B.Sc";
+    }
+
+    private String extractCertifications(String text) {
+        if (text == null) return "None";
+        String lower = text.toLowerCase();
+        if (lower.contains("certified") || lower.contains("certification") || lower.contains("certificate")) {
+            return "Yes";
+        }
+        return "None";
+    }
+
+    private int extractProjectsCount(String text) {
+        if (text == null) return 0;
+        String lower = text.toLowerCase();
+        if (lower.contains("project")) {
+            // грубая оценка по количеству упоминаний
+            int count = 0;
+            int idx = 0;
+            while ((idx = lower.indexOf("project", idx)) != -1) {
+                count++;
+                idx += 7;
             }
+            return Math.min(count, 10);
         }
-        return false;
-    }
-
-    private String buildSummary(int score,
-                                boolean hasTeaching,
-                                boolean hasEducation,
-                                boolean hasExperience,
-                                boolean hasJava,
-                                boolean hasSpring,
-                                int yearsOfExperience,
-                                String specialization) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("Automatic bilingual resume analysis completed. ");
-        sb.append("Candidate score: ").append(score).append("/100. ");
-
-        if (specialization != null && !specialization.isBlank()) {
-            sb.append("Specialization: ").append(specialization).append(". ");
-        }
-
-        if (yearsOfExperience > 0) {
-            sb.append("Declared experience: ").append(yearsOfExperience).append(" years. ");
-        }
-
-        if (hasTeaching) {
-            sb.append("Teaching-related background detected. ");
-        } else {
-            sb.append("Teaching background is not clearly expressed. ");
-        }
-
-        if (hasEducation) {
-            sb.append("Education information is present. ");
-        }
-
-        if (hasExperience) {
-            sb.append("Work experience section or signals detected. ");
-        }
-
-        if (hasJava) {
-            sb.append("Java skill detected. ");
-        }
-
-        if (hasSpring) {
-            sb.append("Spring ecosystem mentioned. ");
-        }
-
-        return sb.toString().trim();
-    }
-
-    private String buildStrengths(boolean hasContacts,
-                                  boolean hasEducation,
-                                  boolean hasExperience,
-                                  boolean hasSkills,
-                                  boolean hasProjects,
-                                  boolean hasTeaching,
-                                  boolean hasJava,
-                                  boolean hasSpring,
-                                  boolean hasDatabase,
-                                  boolean hasBackend,
-                                  boolean hasCertification,
-                                  int yearsOfExperience) {
-        StringBuilder sb = new StringBuilder();
-
-        if (hasContacts) sb.append("Contact information is present. ");
-        if (hasEducation) sb.append("Education section detected. ");
-        if (hasExperience) sb.append("Experience information detected. ");
-        if (hasSkills) sb.append("Skills section detected. ");
-        if (hasProjects) sb.append("Projects or portfolio mentioned. ");
-        if (hasTeaching) sb.append("Teaching or mentoring background found. ");
-        if (hasJava) sb.append("Java knowledge detected. ");
-        if (hasSpring) sb.append("Spring framework knowledge detected. ");
-        if (hasDatabase) sb.append("Database knowledge detected. ");
-        if (hasBackend) sb.append("Backend development skills detected. ");
-        if (hasCertification) sb.append("Certificates or certifications mentioned. ");
-        if (yearsOfExperience >= 1) sb.append("Practical experience provided. ");
-
-        if (sb.length() == 0) {
-            sb.append("Basic candidate data is present, but strong highlights were not clearly detected.");
-        }
-
-        return sb.toString().trim();
-    }
-
-    private String buildWeaknesses(String text,
-                                   boolean hasContacts,
-                                   boolean hasEducation,
-                                   boolean hasExperience,
-                                   boolean hasSkills,
-                                   boolean hasProjects,
-                                   boolean hasTeaching,
-                                   boolean hasCertification,
-                                   int yearsOfExperience) {
-        StringBuilder sb = new StringBuilder();
-
-        if (text.length() < 200) sb.append("Resume text is too short. ");
-        if (!hasContacts) sb.append("Contact information is missing or unclear. ");
-        if (!hasEducation) sb.append("Education section is missing or unclear. ");
-        if (!hasExperience) sb.append("Experience section is missing or unclear. ");
-        if (!hasSkills) sb.append("Skills section is missing or unclear. ");
-        if (!hasProjects) sb.append("Projects or portfolio are not clearly described. ");
-        if (!hasTeaching) sb.append("Teaching or mentoring background is not clearly described. ");
-        if (!hasCertification) sb.append("No certifications were detected. ");
-        if (yearsOfExperience == 0) sb.append("No years of experience were specified. ");
-
-        if (sb.length() == 0) {
-            sb.append("No major weaknesses detected during automatic screening.");
-        }
-
-        return sb.toString().trim();
-    }
-
-    private String buildRecommendation(int score,
-                                       boolean hasTeaching,
-                                       boolean hasEducation,
-                                       boolean hasExperience) {
-        if (score >= 80 && hasTeaching && hasEducation && hasExperience) {
-            return "STRONG_FIT";
-        }
-        if (score >= 60) {
-            return "GOOD_FIT";
-        }
-        if (score >= 40) {
-            return "NEEDS_REVIEW";
-        }
-        return "WEAK_FIT";
+        return 0;
     }
 }
