@@ -11,4 +11,5 @@ public class UpdateLessonRequest {
     private Integer duration;
     private String lectureText;
     private Boolean published;
+    private Boolean quizRequired;
 }

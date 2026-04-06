@@ -62,14 +62,11 @@ public class TeacherApplicationService {
         }
 
         try {
-            // 1. Сначала извлекаем текст из PDF (до загрузки в Cloudinary)
             String resumeText = extractTextFromPdfStream(resumeFile.getInputStream());
 
-            // 2. Загружаем PDF в Cloudinary
             CloudinaryService.FileUploadResult uploaded =
                     cloudinaryService.uploadFile(resumeFile, "resumes");
 
-            // 3. Анализируем резюме через AI
             ResumeAnalysisResult analysis = openAiResumeAnalysisService.analyzeResume(
                     resumeText,
                     request.getSpecialization(),
@@ -103,7 +100,6 @@ public class TeacherApplicationService {
         }
     }
 
-    // ← новый метод — читает из InputStream без сохранения на диск
     private String extractTextFromPdfStream(InputStream inputStream) throws IOException {
         try (PDDocument document = PDDocument.load(inputStream)) {
             PDFTextStripper stripper = new PDFTextStripper();

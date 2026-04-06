@@ -34,4 +34,8 @@ public class TeacherApplication {
     private String aiRecommendation;
 
     private String resumePublicId;
+
+    private Integer quizScore;       // скор квиза 0-100
+    private Boolean quizPassed;      // прошёл/не прошёл
+    private String quizAttemptId;    // ссылка на попытку
 }

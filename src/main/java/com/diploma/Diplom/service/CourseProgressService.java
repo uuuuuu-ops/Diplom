@@ -38,7 +38,28 @@ public class CourseProgressService {
         this.certificateService = certificateService;
     }
 
+    /**
+     * Mark a lesson as complete for a student.
+     *
+     * If the lesson has quizRequired=true, the student must have already
+     * passed the associated quiz. Throws if the requirement is not met.
+     */
     public CourseProgress markLessonCompleted(String userId, String courseId, String lessonId) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+
+        if (lesson.isQuizRequired()) {
+            Quiz quiz = quizRepository.findByLessonId(lessonId)
+                    .orElseThrow(() -> new RuntimeException(
+                            "This lesson requires a quiz but no quiz was found. Contact your teacher."));
+
+            CourseProgress progress = getOrCreateProgress(userId, courseId);
+            if (!progress.getPassedQuizIds().contains(quiz.getId())) {
+                throw new RuntimeException(
+                        "You must pass this lesson's quiz before marking it complete.");
+            }
+        }
+
         CourseProgress progress = getOrCreateProgress(userId, courseId);
         progress.getCompletedLessonIds().add(lessonId);
         progress.setLastUpdatedAt(LocalDateTime.now());
@@ -56,12 +77,50 @@ public class CourseProgressService {
         return courseProgressRepository.save(progress);
     }
 
-    public CourseProgress getProgressByLessonId(String userId, String lessonId) {
-    Lesson lesson = lessonRepository.findById(lessonId)
-            .orElseThrow(() -> new RuntimeException("Lesson not found"));
+    /**
+     * Returns true if the student can access the given lesson.
+     *
+     * A lesson is accessible when all lessons with a lower orderIndex
+     * (that are published) have been completed (and their quizzes passed if required).
+     */
+    public boolean isLessonUnlocked(String userId, String courseId, String lessonId) {
+        Lesson target = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new RuntimeException("Lesson not found"));
 
-    return getProgress(userId, lesson.getCourseId());
-}
+        // first lesson is always unlocked
+        if (target.getOrderIndex() == 0) return true;
+
+        List<Lesson> allLessons = lessonRepository
+                .findByCourseIdOrderByOrderIndexAsc(courseId);
+
+        CourseProgress progress = getOrCreateProgress(userId, courseId);
+
+        for (Lesson previous : allLessons) {
+            if (!previous.isPublished()) continue;
+            if (previous.getOrderIndex() >= target.getOrderIndex()) break;
+
+            // previous lesson must be completed
+            if (!progress.getCompletedLessonIds().contains(previous.getId())) {
+                return false;
+            }
+
+            // if it requires a quiz, that quiz must be passed too
+            if (previous.isQuizRequired()) {
+                Quiz quiz = quizRepository.findByLessonId(previous.getId()).orElse(null);
+                if (quiz != null && !progress.getPassedQuizIds().contains(quiz.getId())) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    public CourseProgress getProgressByLessonId(String userId, String lessonId) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+        return getProgress(userId, lesson.getCourseId());
+    }
 
     public CourseProgress getProgress(String userId, String courseId) {
         return getOrCreateProgress(userId, courseId);

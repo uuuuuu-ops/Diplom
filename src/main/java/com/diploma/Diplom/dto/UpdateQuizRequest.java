@@ -9,6 +9,11 @@ import java.util.List;
 public class UpdateQuizRequest {
 
     private String title;
+    private String description;
+    private Integer passingScore;
+
+    private Integer timeLimitSeconds;
+
     private List<QuizQuestion> questions;
     private Boolean published;
 }

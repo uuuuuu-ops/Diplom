@@ -10,4 +10,5 @@ public class CreateLessonRequest {
     private int orderIndex;
     private int duration;
     private String lectureText;
+    private boolean quizRequired = false;
 }

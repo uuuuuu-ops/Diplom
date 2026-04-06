@@ -9,17 +9,79 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @RestController
 @RequestMapping("/files")
+@Tag(name = "Files", description = "Serve uploaded files such as PDFs, images, and videos")
 public class FileController {
 
     @Value("${app.upload.dir:uploads}")
     private String uploadRootDir;
 
+    @Operation(
+        summary = "Get uploaded file by relative path",
+        description = """
+            Returns a file from the upload directory by its relative path.
+
+            Supported inline preview types:
+            - PDF
+            - PNG
+            - JPG / JPEG
+            - GIF
+            - MP4
+            - WEBM
+
+            Other file types are returned as downloadable attachments.
+
+            Example:
+            `/files?path=certificates/certificate-123.pdf`
+            """,
+        parameters = {
+            @Parameter(
+                name = "path",
+                description = "Relative path to the file inside the upload directory",
+                required = true,
+                in = ParameterIn.QUERY,
+                example = "certificates/certificate-123.pdf"
+            )
+        },
+        responses = {
+            @ApiResponse(
+                responseCode = "200",
+                description = "File returned successfully",
+                content = @Content(
+                    mediaType = "*/*",
+                    schema = @Schema(type = "string", format = "binary")
+                )
+            ),
+            @ApiResponse(
+                responseCode = "400",
+                description = "Invalid file path",
+                content = @Content
+            ),
+            @ApiResponse(
+                responseCode = "404",
+                description = "File not found",
+                content = @Content
+            ),
+            @ApiResponse(
+                responseCode = "500",
+                description = "Failed to read file",
+                content = @Content
+            )
+        }
+    )
     @GetMapping
     public ResponseEntity<Resource> getFile(@RequestParam("path") String filePath) {
         try {

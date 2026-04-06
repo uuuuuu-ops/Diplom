@@ -47,7 +47,7 @@ public class QuizService {
         validateCourseOwnership(user, course);
 
         if (quizRepository.findByLessonId(lessonId).isPresent()) {
-            throw new RuntimeException("Quiz already exists for this lesson");
+            throw new RuntimeException("A quiz already exists for this lesson. Use PUT to update it.");
         }
 
         validateQuestions(request.getQuestions());
@@ -55,7 +55,10 @@ public class QuizService {
         Quiz quiz = new Quiz();
         quiz.setLessonId(lessonId);
         quiz.setTitle(request.getTitle());
+        quiz.setDescription(request.getDescription());
         quiz.setQuestions(request.getQuestions());
+        quiz.setPassingScore(request.getPassingScore() != null ? request.getPassingScore() : 60);
+        quiz.setTimeLimitSeconds(request.getTimeLimitSeconds()); // null = no limit
         quiz.setPublished(false);
         quiz.setCreatedAt(LocalDateTime.now());
         quiz.setUpdatedAt(LocalDateTime.now());
@@ -70,7 +73,7 @@ public class QuizService {
 
     public Quiz getQuizByLessonId(String lessonId) {
         return quizRepository.findByLessonId(lessonId)
-                .orElseThrow(() -> new RuntimeException("Quiz not found for this lesson"));
+                .orElseThrow(() -> new RuntimeException("No quiz found for this lesson"));
     }
 
     public Quiz updateQuiz(String teacherEmail, String quizId, UpdateQuizRequest request) {
@@ -87,8 +90,15 @@ public class QuizService {
 
         validateCourseOwnership(user, course);
 
-        if (request.getTitle() != null) {
-            quiz.setTitle(request.getTitle());
+        if (request.getTitle() != null) quiz.setTitle(request.getTitle());
+        if (request.getDescription() != null) quiz.setDescription(request.getDescription());
+        if (request.getPassingScore() != null) quiz.setPassingScore(request.getPassingScore());
+
+        if (request.getTimeLimitSeconds() != null) {
+            // -1 signals "remove the time limit"
+            quiz.setTimeLimitSeconds(request.getTimeLimitSeconds() == -1
+                    ? null
+                    : request.getTimeLimitSeconds());
         }
 
         if (request.getQuestions() != null) {
@@ -96,12 +106,9 @@ public class QuizService {
             quiz.setQuestions(request.getQuestions());
         }
 
-        if (request.getPublished() != null) {
-            quiz.setPublished(request.getPublished());
-        }
+        if (request.getPublished() != null) quiz.setPublished(request.getPublished());
 
         quiz.setUpdatedAt(LocalDateTime.now());
-
         return quizRepository.save(quiz);
     }
 
@@ -118,7 +125,6 @@ public class QuizService {
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
         validateCourseOwnership(user, course);
-
         quizRepository.delete(quiz);
     }
 
@@ -126,45 +132,30 @@ public class QuizService {
         if (questions == null || questions.isEmpty()) {
             throw new RuntimeException("Quiz must contain at least one question");
         }
-
-        for (QuizQuestion question : questions) {
-            if (question.getQuestion() == null || question.getQuestion().isBlank()) {
+        for (QuizQuestion q : questions) {
+            if (q.getQuestion() == null || q.getQuestion().isBlank())
                 throw new RuntimeException("Question text is required");
-            }
-
-            if (question.getOptions() == null || question.getOptions().size() < 2) {
+            if (q.getOptions() == null || q.getOptions().size() < 2)
                 throw new RuntimeException("Each question must have at least two options");
-            }
-
-            if (question.getCorrectAnswerIndex() == null) {
+            if (q.getCorrectAnswerIndex() == null)
                 throw new RuntimeException("Correct answer index is required");
-            }
-
-            if (question.getCorrectAnswerIndex() < 0 ||
-                    question.getCorrectAnswerIndex() >= question.getOptions().size()) {
+            if (q.getCorrectAnswerIndex() < 0 || q.getCorrectAnswerIndex() >= q.getOptions().size())
                 throw new RuntimeException("Correct answer index is out of range");
-            }
         }
     }
 
     private User getApprovedTeacher(String teacherEmail) {
         User user = userRepository.findByEmail(teacherEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (user.getRole() != Role.TEACHER) {
+        if (user.getRole() != Role.TEACHER)
             throw new RuntimeException("Only teachers can manage quizzes");
-        }
-
-        if (!user.isTeacherApproved()) {
+        if (!user.isTeacherApproved())
             throw new RuntimeException("Only approved teachers can manage quizzes");
-        }
-
         return user;
     }
 
     private void validateCourseOwnership(User user, Course course) {
-        if (!course.getTeacherId().equals(user.getId())) {
-            throw new RuntimeException("You can manage quizzes only in your own course");
-        }
+        if (!course.getTeacherId().equals(user.getId()))
+            throw new RuntimeException("You can only manage quizzes in your own courses");
     }
 }

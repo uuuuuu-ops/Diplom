@@ -10,8 +10,19 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/teacher/quiz")
+@Tag(name = "Teacher Quiz", description = "Quiz flow for teacher applications")
+@SecurityRequirement(name = "bearerAuth")
 public class TeacherQuizController {
 
     private final TeacherQuizService quizService;
@@ -20,17 +31,52 @@ public class TeacherQuizController {
         this.quizService = quizService;
     }
 
-    // Получить вопросы квиза
+    @Operation(
+        summary = "Get teacher quiz questions",
+        description = "Returns all quiz questions for the specified teacher application.",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Questions retrieved",
+                content = @Content(array = @ArraySchema(schema = @Schema(implementation = TeacherQuizQuestion.class)))),
+            @ApiResponse(responseCode = "404", description = "Application or quiz not found",
+                content = @Content)
+        }
+    )
     @GetMapping("/{applicationId}/questions")
     public ResponseEntity<List<TeacherQuizQuestion>> getQuestions(
-            @PathVariable String applicationId) {
+            @Parameter(description = "Teacher application ID") @PathVariable String applicationId) {
         return ResponseEntity.ok(quizService.getQuestions(applicationId));
     }
 
-    // Отправить ответы
+    @Operation(
+        summary = "Submit teacher quiz answers",
+        description = """
+            Submits quiz answers for the current authenticated user.
+
+            **Body example:**
+            ```json
+            {
+              "0": 2,
+              "1": 1,
+              "2": 3
+            }
+            ```
+
+            Where:
+            - key = question index or question identifier used by your service
+            - value = selected answer index
+            """,
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Quiz submitted successfully",
+                content = @Content(schema = @Schema(implementation = TeacherQuizAttempt.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid answers payload",
+                content = @Content),
+            @ApiResponse(responseCode = "404", description = "Application or questions not found",
+                content = @Content)
+        }
+    )
     @PostMapping("/{applicationId}/submit")
     public ResponseEntity<TeacherQuizAttempt> submitQuiz(
-            @PathVariable String applicationId,
+            @Parameter(description = "Teacher application ID") @PathVariable String applicationId,
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody Map<String, Integer> answers) {
 
@@ -39,10 +85,19 @@ public class TeacherQuizController {
         );
     }
 
-    // Получить результат
+    @Operation(
+        summary = "Get my teacher quiz result",
+        description = "Returns the current user's quiz attempt/result for the specified application.",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Quiz result retrieved",
+                content = @Content(schema = @Schema(implementation = TeacherQuizAttempt.class))),
+            @ApiResponse(responseCode = "404", description = "Attempt not found",
+                content = @Content)
+        }
+    )
     @GetMapping("/{applicationId}/result")
     public ResponseEntity<TeacherQuizAttempt> getResult(
-            @PathVariable String applicationId) {
+            @Parameter(description = "Teacher application ID") @PathVariable String applicationId) {
         return ResponseEntity.ok(quizService.getMyAttempt(applicationId));
     }
 }

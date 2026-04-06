@@ -22,7 +22,6 @@ public class TeacherQuizService {
         this.applicationRepository = applicationRepository;
     }
 
-    // Получить 5 вопросов по специализации
     public List<TeacherQuizQuestion> getQuestions(String applicationId) {
         TeacherApplication app = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
@@ -40,11 +39,9 @@ public class TeacherQuizService {
         return questions.stream().limit(5).collect(Collectors.toList());
     }
 
-    // Принять ответы и посчитать результат
     public TeacherQuizAttempt submitQuiz(String userId,
                                          String applicationId,
                                          Map<String, Integer> answers) {
-        // answers = { questionId -> selectedIndex }
 
         TeacherApplication app = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
