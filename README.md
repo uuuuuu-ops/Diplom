@@ -1,1030 +1,529 @@
-#  Diplom LMS Backend
+# 📚 LMS Diploma — Learning Management System
 
-Backend часть дипломного проекта LMS (Learning Management System).  
-Полноценная серверная архитектура для образовательной платформы с ролями, курсами, уроками и AI-анализом резюме.
-
----
-
-##  Overview
-
-Система предоставляет:
-
-- аутентификацию и авторизацию (JWT)
-- управление ролями пользователей
-- процесс подачи и одобрения преподавателей
-- управление курсами, уроками и тестами
-- загрузку и хранение файлов
-- автоматический анализ резюме
-- оплату курсов через PayPal
-- подписочную модель доступа
-- систему enrollments и проверки доступа к курсам
+> Дипломный проект: полнофункциональная платформа онлайн-обучения с поддержкой монетизации, ИИ-скрининга преподавателей и системой сертификатов.
 
 ---
 
-##  Features
+## 🗂 Содержание
 
--  JWT Authentication & Authorization
--  Role-based Access (`STUDENT`, `TEACHER`, `ADMIN`)
--  Teacher Application System
--  AI Resume Analysis (local, no external API)
--  Course Management
--  Lesson Management (video + PDF)
--  Quiz System
--  File Upload & Serving
--  Resource Ownership Validation
-- PayPal Course Payments
-- PayPal Subscriptions
-- Enrollment & Access Control
+- [Обзор проекта](#обзор-проекта)
+- [Архитектура](#архитектура)
+- [Технологический стек](#технологический-стек)
+- [Модули системы](#модули-системы)
+- [API — краткий справочник](#api--краткий-справочник)
+- [Запуск проекта](#запуск-проекта)
+- [ИИ-модуль: Resume Screener](#ии-модуль-resume-screener)
+- [Переменные окружения](#переменные-окружения)
+- [TODO — Будущая работа](#todo--будущая-работа)
 
 ---
 
-##  Project Structure
+## Обзор проекта
 
+LMS Diploma — REST-бэкенд системы управления обучением (Learning Management System), разработанный на Spring Boot с MongoDB. Платформа поддерживает три роли пользователей: **STUDENT**, **TEACHER** и **ADMIN**. Монетизация реализована через PayPal (разовые платежи и подписки). Для отбора кандидатов в преподаватели используется отдельный Python-сервис на FastAPI с моделью машинного обучения.
 
-src/main/java/com/diploma/Diplom
-│
-├── controller # REST endpoints
-├── service # business logic
-├── repository # MongoDB access
-├── model # entities
-├── dto # DTO objects
-├── security # JWT, filters, config
-├── auth # authentication
-├── ai # resume analysis
-└── files # file handling
+### Ключевые возможности
 
+- Регистрация с верификацией по email и JWT-аутентификация
+- Управление курсами, уроками, квизами и прогрессом студента
+- Монетизация: разовая покупка курса и периодические подписки (PayPal)
+- Скрининг резюме преподавателей через ML-модель (Random Forest)
+- Генерация PDF-сертификатов по завершении курса с QR-кодом
+- Загрузка медиафайлов через Cloudinary
+- Полная документация Swagger / OpenAPI 3
 
 ---
 
-##  Tech Stack
+## Архитектура
 
-| Category        | Technology |
-|----------------|------------|
-| Backend        | Java, Spring Boot |
-| Security       | Spring Security, JWT |
-| Database       | MongoDB |
-| File Handling  | Apache PDFBox |
-| Build Tool     | Maven |
-| Utilities      | Lombok |
+```
+┌─────────────────────────────────────────────────────┐
+│                   Frontend (React)                  │
+└───────────────────────┬─────────────────────────────┘
+                        │ HTTP / REST
+┌───────────────────────▼─────────────────────────────┐
+│           Spring Boot Backend  :8080                │
+│                                                     │
+│  controller/   service/   repository/               │
+│  model/        dto/        security/                │
+│  config/       exception/  util/                    │
+└──────┬──────────────────────────┬───────────────────┘
+       │ MongoDB                  │ HTTP
+┌──────▼──────┐          ┌────────▼────────┐
+│  MongoDB    │          │  FastAPI AI     │
+│  (NoSQL DB) │          │  Service :8000  │
+└─────────────┘          └─────────────────┘
+                                  │ joblib
+                         ┌────────▼────────┐
+                         │ resume_model.pkl│
+                         │ (Random Forest) │
+                         └─────────────────┘
+```
 
 ---
 
-##  Roles & Permissions
+## Технологический стек
 
-# STUDENT
-- Browse courses
-- Enroll in free courses
-- Buy paid courses
-- Access lessons if enrolled or subscribed
-# TEACHER
-- Submit application
-- Create courses, lessons and quizzes after approval
-# ADMIN
-- Review teacher applications
-- Approve or reject teachers
-
----
-
-##  Teacher Approval Workflow
-
-
-- Register as TEACHER
-- ↓
-- Submit application
-- ↓
-- Upload resume (PDF)
-- ↓
-- AI analysis
-- ↓
-- Admin review
-- ↓
-- teacherApproved = true
-- ↓
-- Access to course creation
-
+| Слой | Технология |
+|------|------------|
+| Backend | Java 17+, Spring Boot 3, Spring Security, Spring Data MongoDB |
+| Аутентификация | JWT (io.jsonwebtoken), BCrypt |
+| База данных | MongoDB |
+| Платежи | PayPal REST API (Orders + Subscriptions) |
+| Медиафайлы | Cloudinary |
+| Документация | SpringDoc OpenAPI 3 / Swagger UI |
+| Сертификаты | iText / PDF, QR-код (ZXing) |
+| ИИ-сервис | Python 3.10+, FastAPI, scikit-learn, joblib, pandas |
+| Email | Spring Mail (SMTP) |
 
 ---
 
-##  AI Resume Analysis
+## Модули системы
 
-Local rule-based module:
+### 🔐 Auth — Аутентификация
 
-### Extracts:
-- education
-- teaching experience
-- skills
-- projects
-- technical stack
+- `POST /auth/register` — регистрация (роль всегда `STUDENT`, email-верификация обязательна)
+- `POST /auth/verify` — подтверждение email по 6-значному коду
+- `POST /auth/login` — получение JWT-токена
 
-### Generates:
-- `aiScore`
-- `aiSummary`
-- `aiStrengths`
-- `aiWeaknesses`
-- `aiRecommendation`
+Верификационные коды генерируются через `SecureRandom` и живут 10 минут. При сбое отправки email пользователь и код автоматически откатываются.
 
 ---
 
-##  Data Models
+### 👨‍🏫 TeacherApplication — Заявки преподавателей
 
-### User
-```
-id
-email
-password
-role
-teacherApproved
-```
-
-### TeacherApplication
-```
-userId
-fullName
-email
-resumeText
-resumeFileName
-resumeFileUrl
-specialization
-yearsOfExperience
-aiScore
-aiSummary
-aiStrengths
-aiWeaknesses
-aiRecommendation
-status
-reviewComment
-createdAt
-```
-
-### Course
-```
-id
-title
-description
-teacherId
-category
-level
-thumbnail
-published
-free
-price
-currency
-createdAt
-updatedAt
-```
-
-### Lesson
-```
-id
-courseId
-title
-description
-orderIndex
-duration
-videoUrl
-videoFileName
-lectureText
-lecturePdfUrl
-lecturePdfFileName
-published
-createdAt
-updatedAt
-```
-
-### Quiz
-```
-id
-lessonId
-title
-questions
-published
-createdAt
-updatedAt
-```
-
-### Enrollment
-```
-
-id
-userId
-courseId
-createdAt
-```
-### Payment
-```
-
-id
-userId
-courseId
-orderId
-amount
-status
-createdAt
-```
-### Subscription
-```
-
-id
-userId
-subscriptionId
-planType
-status
-createdAt
-```
----
-
-##  Getting Started
-
-### 1. Clone repository
-
-
-git clone https://github.com/uuuuuu-ops/Diplom
-
-cd Diplom
-
-
-### 2. Configure MongoDB
-
-
-spring.data.mongodb.uri=mongodb://localhost:27017/diplom
-
-
-### 3. Run application
-
-
-mvn spring-boot:run
-
-
-##  API Endpoints
-
-###  AUTH
-
-POST /auth/register  
-Регистрация нового пользователя  
-
-POST /auth/login  
-Авторизация пользователя, возвращает JWT токен  
-
-POST /auth/verify  
-Подтверждение email пользователя  
+Система двухэтапного отбора:
+1. Студент подаёт заявку с резюме
+2. Резюме анализируется AI-сервисом (score, strengths, weaknesses)
+3. Квалификационный квиз от преподавателя
+4. Администратор принимает или отклоняет заявку
+5. При одобрении роль меняется на `TEACHER`, флаг `teacherApproved = true`
 
 ---
 
-###  TEACHER APPLICATIONS
+### 📖 Course — Управление курсами
 
-POST /teacher-applications  
-Создание заявки преподавателя с загрузкой резюме  
-
-GET /teacher-applications  
-Получение всех заявок (ADMIN)  
-
-GET /teacher-applications/pending  
-Получение всех заявок со статусом PENDING  
-
-POST /teacher-applications/{applicationId}/approve  
-Подтверждение заявки преподавателя (ADMIN)  
-
-POST /teacher-applications/{applicationId}/reject  
-Отклонение заявки преподавателя (ADMIN)  
+- CRUD для курсов (только одобренные преподаватели)
+- Поддержка бесплатных и платных курсов (USD)
+- Загрузка превью-изображения через Cloudinary
+- Публикация/снятие курса с публикации
+- Средний рейтинг (`avgRating`, `ratingCount`) пересчитывается при каждой новой оценке
 
 ---
 
-###  COURSES
+### 📝 Lesson — Уроки
 
-POST /courses  
-Создание курса (только для подтверждённых преподавателей)  
-
-GET /courses/my  
-Получение курсов текущего преподавателя  
-
-GET /courses/{courseId}  
-Получение курса по ID  
-
-PUT /courses/{courseId}  
-Обновление курса (только владелец)  
-
-DELETE /courses/{courseId}  
-Удаление курса (только владелец)  
+- CRUD уроков внутри курса (только владелец курса)
+- Видео-контент, вложения, порядок уроков (`orderIndex`)
+- Прогресс по уроку: отметка завершения
+- Комментарии к урокам
 
 ---
 
-###  LESSONS
+### 🧪 Quiz — Квизы
 
-POST /lessons/course/{courseId}  
-Создание урока в курсе  
+Два типа квизов:
+- **CourseQuiz** — квиз для проверки знаний студентов по курсу
+- **TeacherQuiz** — квалификационный квиз при подаче заявки в преподаватели
 
-GET /lessons/course/{courseId}  
-Получение всех уроков курса  
-
-GET /lessons/{lessonId}  
-Получение урока по ID  
-
-PUT /lessons/{lessonId}  
-Обновление урока (только владелец курса)  
-
-DELETE /lessons/{lessonId}  
-Удаление урока (только владелец курса)  
+Поддерживается несколько попыток, хранение истории попыток.
 
 ---
 
-###  QUIZZES
+### 💳 Payment & Subscription — Платежи
 
-POST /quizzes/lesson/{lessonId}  
-Создание квиза для урока  
-
-GET /quizzes/lesson/{lessonId}  
-Получение квиза по уроку  
-
-GET /quizzes/{quizId}  
-Получение квиза по ID  
-
-PUT /quizzes/{quizId}  
-Обновление квиза (только владелец)  
-
-DELETE /quizzes/{quizId}  
-Удаление квиза (только владелец)  
-
-### Certificate
-
-Выпустить сертификат
-POST /api/certificates/issue?userId=USER_ID&courseId=COURSE_ID
-
-Регенерировать
-POST /api/certificates/{certificateId}/regenerate
-
-Получить сертификат
-GET /api/certificates/{certificateId}
-
-Проверить сертификат
-GET /api/certificates/verify/{verificationCode}
-
-
-### PAYMENTS (PayPal)
-
-POST /payments/paypal/orders/course/{courseId} 
-создать PayPal order для покупки курса
-
-POST /payments/paypal/orders/capture 
-подтвердить оплату после approve
-
-GET /payments/paypal/my 
-получить мои платежи
-
-### SUBSCRIPTIONS (PayPal)
-
-GET /subscriptions/paypal/plan 
-получить PayPal planId
-
-POST /subscriptions/paypal/confirm 
-подтвердить подписку
-
-POST /subscriptions/paypal/save-pending 
-сохранить pending subscription
-
-GET /subscriptions/paypal/my 
-получить мои подписки
-
-### ENROLLMENTS
-
-POST /enrollments/free/{courseId} 
-записаться на бесплатный курс
-
-GET /enrollments/check/{courseId} 
-проверить доступ к курсу
-
-GET /enrollments/my 
-получить мои enrollments
-
-
-
-
-
-## Frontend Integration Flow
-
-The frontend should interact with the backend in the following way:
-
-
-# AUTH
-
-## Register
-
-POST /auth/register
-
-json{ "email": "user@mail.com", "password": "pass123", "role": "STUDENT" }
-roles: STUDENT or TEACHER
-
-## Login
-
-POST /auth/login
-
-json{ "email": "user@mail.com", "password": "pass123" }
-→ returns JWT token. Store it and attach to every request.
-
-Verify email
-POST /auth/verify
-json{ "email": "user@mail.com", "code": "123456" }
-
-
-# Teacher Application Flow
-
-After registering as `TEACHER`, the user must submit an application and wait for admin approval before they can create courses. `teacherApproved` in the JWT will flip to `true` once approved.
-
-**Submit application + upload resume**
-`POST /teacher-applications`
-`Content-Type: multipart/form-data`
-
-fullName: "Rassul Bekov"
-specialization: "Backend Development"
-yearsOfExperience: 3
-resume: <PDF file>
-
-→ AI automatically scores the resume and fills aiScore, aiSummary, aiStrengths, aiWeaknesses
-Admin: get all applications
-GET /teacher-applications 🔒 ADMIN
-Admin: get pending only
-GET /teacher-applications/pending 🔒 ADMIN
-Admin: approve
-POST /teacher-applications/{applicationId}/approve 🔒 ADMIN
-Admin: reject
-POST /teacher-applications/{applicationId}/reject 🔒 ADMIN
-json{ "reviewComment": "Not enough experience" }
-
-# COURSES  TEACHER (approved only)
-Create course
-POST /courses
-json{
-  "title": "Spring Boot Basics",
-  "description": "Learn Spring Boot from scratch",
-  "category": "Backend",
-  "level": "BEGINNER",
-  "thumbnail": "optional-url"
-}
-My courses
-GET /courses/my
-Get course by ID
-GET /courses/{courseId}
-Update course
-PUT /courses/{courseId}
-json{ "title": "Updated title", "description": "...", "published": true }
-
-
-**Delete course**
-`DELETE /courses/{courseId}`
-
-
-
-# LESSONS TEACHER (course owner)
-
-**Create lesson**
-`POST /lessons/course/{courseId}`
-`Content-Type: multipart/form-data`
-
-title: "Intro to Controllers"
-description: "..."
-orderIndex: 1
-duration: 30
-lectureText: "optional inline text"
-video: <video file>
-lecturePdf: <PDF file>
-Get all lessons in course
-GET /lessons/course/{courseId}
-Get lesson by ID
-GET /lessons/{lessonId}
-Update lesson
-PUT /lessons/{lessonId}
-Content-Type: multipart/form-data — same fields as create
-Delete lesson
-DELETE /lessons/{lessonId}
-
-# QUIZZES 🔒 TEACHER (course owner)
-Create quiz
-POST /quizzes/lesson/{lessonId}
-json{
-  "title": "Controllers Quiz",
-  "questions": [
-    {
-      "question": "What annotation maps HTTP requests?",
-      "options": ["@Controller", "@Service", "@Repository", "@Component"],
-      "correctAnswer": "@Controller"
-    }
-  ]
-}
-
-
-**Get quiz by lesson**
-`GET /quizzes/lesson/{lessonId}`
-
-**Get quiz by ID**
-`GET /quizzes/{quizId}`
-
-**Update quiz**
-`PUT /quizzes/{quizId}` — same body as create
-
-**Delete quiz**
-`DELETE /quizzes/{quizId}`
+- **PayPal Orders** — разовая покупка курса
+- **PayPal Subscriptions** — периодические подписки на контент
+- `PaypalTokenCache` — кеш OAuth2-токена PayPal для минимизации запросов
+- Mock-платёж (для тестирования без реального PayPal)
+- Модели: `Payment`, `Subscription`, `PaymentStatus`, `SubscriptionStatus`, `SubscriptionType`
 
 ---
 
+### 🎓 Certificate — Сертификаты
 
-# Paid Course Flow
-
-User clicks Buy Course
-
-Frontend calls:
-POST /payments/paypal/orders/course/{courseId}
-Backend returns PayPal order data
-
-User approves payment in PayPal
-Frontend sends:
-POST /payments/paypal/orders/capture
-Payment is saved in backend
-
-# Subscription Flow
-Frontend requests plan:
-GET /subscriptions/paypal/plan
-
-Frontend renders PayPal subscription button
-After PayPal approval frontend receives subscriptionId
-Frontend sends it to:
-POST /subscriptions/paypal/confirm
-
-# Optional pending flow:
-
-POST /subscriptions/paypal/save-pending
-Free Course Enrollment Flow
-
-User clicks Enroll for Free
-Frontend calls:
-POST /enrollments/free/{courseId}
-Enrollment is created
-
-Access can be checked via:
-GET /enrollments/check/{courseId}
-Access Check
-
-GET /enrollments/check/{courseId}
-
-# Используется для:
-
-показа кнопки Buy / Subscribe / Open
-скрытия закрытого контента
-проверки доступа к урокам курса
-
-# FILES
-
-**Serve any file (video, PDF, image)**
-`GET /files?path=uploads/filename.pdf`
-
-Pass the JWT header. Use the `videoUrl`, `lecturePdfUrl`, `resumeFileUrl`, and `thumbnail` values returned from other endpoints directly as the `path` param.
+- Генерация PDF-сертификата по завершении курса
+- Встроенный QR-код для верификации
+- Хранение метаданных (дата, курс, студент, уникальный UUID)
 
 ---
 
-## Role → Page Map
+### 📊 Progress — Прогресс студента
 
-| Role | Accessible pages |
-|---|---|
-| STUDENT | Browse courses, view lessons, take quizzes |
-| TEACHER (pending) | Submit application, wait screen |
-| TEACHER (approved) | Course CRUD, lesson CRUD, quiz CRUD |
-| ADMIN | All applications, approve/reject panel |
+- `CourseProgress` — агрегированный прогресс по курсу
+- `LessonProgress` — прогресс по отдельным урокам
+- Автоматическое обновление при завершении урока
 
 ---
 
-## Frontend Routing + API Mapping
+### 🤖 AI-модуль — Resume Screener
 
-### AUTH
+Отдельный FastAPI-сервис для скрининга резюме кандидатов в преподаватели. Подробнее — в разделе [ИИ-модуль](#ии-модуль-resume-screener).
 
-#### `/login`
-Использует:
+---
+
+## API — краткий справочник
+
+После запуска полная документация доступна по адресу:
+
+```
+http://localhost:8080/swagger-ui/index.html
+```
+
+Для авторизации:
+1. `POST /auth/login` — получить токен
+2. Нажать **Authorize** в Swagger UI
+3. Ввести `Bearer <ваш_токен>`
+
+### Основные группы эндпоинтов
+
+| Префикс | Описание |
+|---------|----------|
+| `/auth/**` | Публичные: регистрация, верификация, логин |
+| `/api/courses/**` | Управление курсами |
+| `/api/lessons/**` | Управление уроками |
+| `/api/quiz/**` | Квизы студентов |
+| `/api/teacher-quiz/**` | Квалификационные квизы |
+| `/api/teacher-applications/**` | Заявки в преподаватели |
+| `/api/payments/**` | PayPal: разовые платежи |
+| `/api/subscriptions/**` | PayPal: подписки |
+| `/api/certificates/**` | Сертификаты |
+| `/api/progress/**` | Прогресс студента |
+| `/api/ratings/**` | Рейтинги курсов |
+| `/api/comments/**` | Комментарии к урокам |
+| `/api/files/**` | Загрузка файлов |
+
+---
+## Эндпоинты 
+---
+
+## Модули
+- **auth** — registration, login, verification
+- **security** — JWT service, JWT filter, security configuration
+- **controller** — public and protected REST endpoints
+- **service** — business logic layer
+- **repository** — Mongo repositories
+- **model** — domain entities and enums
+- **dto** — request/response objects
+- **config** — Mongo, Cloudinary, file storage and other configuration
+- **exception** — global exception handling
+- **util** — security helpers
+- **Ai** — separate FastAPI microservice for resume screening
+
+---
+
+## Основные сущности
+
+- `User`
+- `Course`
+- `Lesson`
+- `Enrollment`
+- `Subscription`
+- `Payment`
+- `Quiz`
+- `QuizQuestion`
+- `QuizAttempt`
+- `TeacherApplication`
+- `TeacherQuizQuestion`
+- `TeacherQuizAttempt`
+- `CourseProgress`
+- `LessonComment`
+- `CourseRating`
+- `Certificate`
+- `VerificationCode`
+
+---
+
+## Группы АПИ
+
+### Authentication
+- `POST /auth/register`
+- `POST /auth/verify`
 - `POST /auth/login`
 
-Назначение:
-- авторизация пользователя
-- получение JWT токена
-
----
-
-#### `/register`
-Использует:
-- `POST /auth/register`
-
-Назначение:
-- регистрация нового пользователя (`STUDENT` или `TEACHER`)
-
----
-
-#### `/verify-email`
-Использует:
-- `POST /auth/verify`
-
-Назначение:
-- подтверждение email пользователя
-
----
-
-### STUDENT
-
-#### `/student/courses`
-Использует:
-- `GET /courses/{courseId}` *(для отдельной карточки курса или списка через будущий публичный список курсов)*
-- `GET /enrollments/my`
-- `GET /subscriptions/paypal/my`
-- `GET /payments/paypal/my`
-
-Назначение:
-- просмотр доступных курсов
-- отображение статуса доступа
-- отображение купленных / доступных курсов
-
----
-
-#### `/student/courses/:courseId`
-Использует:
-- `GET /courses/{courseId}`
-- `GET /enrollments/check/{courseId}`
-
-Дополнительно может вызывать:
-- `POST /enrollments/free/{courseId}` — если курс бесплатный
-- `POST /payments/paypal/orders/course/{courseId}` — если курс платный
-- `GET /subscriptions/paypal/plan` — если доступ по подписке
-
-Назначение:
-- просмотр страницы курса
-- показ кнопки `Enroll`, `Buy`, `Subscribe` или `Open`
-
----
-
-#### `/student/courses/:courseId/lessons/:lessonId`
-Использует:
-- `GET /enrollments/check/{courseId}`
-- `GET /lessons/{lessonId}`
-- `GET /quizzes/lesson/{lessonId}`
-
-Назначение:
-- просмотр урока
-- загрузка lesson content
-- получение quiz для урока
-- защита страницы через access check
-
----
-
-#### `/student/payments`
-Использует:
-- `GET /payments/paypal/my`
-
-Назначение:
-- отображение истории платежей пользователя
-
----
-
-#### `/student/subscriptions`
-Использует:
-- `GET /subscriptions/paypal/my`
-- `GET /subscriptions/paypal/plan`
-
-Назначение:
-- просмотр текущей подписки
-- отображение доступного PayPal plan
-
----
-
-#### `/student/enrollments`
-Использует:
-- `GET /enrollments/my`
-
-Назначение:
-- отображение всех enrollment записей пользователя
-
----
-
-#### `/student/courses/:courseId/buy`
-Использует:
-- `POST /payments/paypal/orders/course/{courseId}`
-
-После approve:
-- `POST /payments/paypal/orders/capture`
-
-Назначение:
-- запуск покупки платного курса через PayPal
-
----
-
-#### `/student/courses/:courseId/subscribe`
-Использует:
-- `GET /subscriptions/paypal/plan`
-
-После approve:
-- `POST /subscriptions/paypal/confirm`
-
-Опционально:
-- `POST /subscriptions/paypal/save-pending`
-
-Назначение:
-- запуск подписочного PayPal flow
-
----
-
-#### `/student/courses/:courseId/access`
-Использует:
-- `GET /enrollments/check/{courseId}`
-
-Назначение:
-- проверка, есть ли у пользователя доступ к курсу
-
----
-
-### TEACHER
-
-#### `/teacher/apply`
-Использует:
-- `POST /teacher-applications`
-
-Назначение:
-- подача заявки преподавателя
-- загрузка resume PDF
-- запуск AI resume analysis
-
----
-
-#### `/teacher/application-status`
-Использует:
-- `GET /teacher-applications` *(если есть отдельный endpoint статуса для текущего пользователя — лучше использовать его, но из текущего README явно не показан)*
-
-Назначение:
-- просмотр статуса заявки преподавателя
-
----
-
-#### `/teacher/courses`
-Использует:
-- `GET /courses/my`
-
-Назначение:
-- отображение всех курсов преподавателя
-
----
-
-#### `/teacher/courses/new`
-Использует:
-- `POST /courses`
-
-`Content-Type: multipart/form-data`
-
-Поля:
-- `title`
-- `description`
-- `category`
-- `level`
-- `thumbnailFile`
-- `free`
-- `price`
-
-Назначение:
-- создание нового курса
-
----
-
-#### `/teacher/courses/:courseId/edit`
-Использует:
-- `GET /courses/{courseId}`
-- `PUT /courses/{courseId}`
-
-`Content-Type: multipart/form-data`
-
-Поля:
-- `title`
-- `description`
-- `category`
-- `level`
-- `published`
-- `thumbnailFile`
-
-Дополнительно:
-- `DELETE /courses/{courseId}`
-
-Назначение:
-- редактирование курса
-- публикация курса
-- удаление курса
-
----
-
-#### `/teacher/courses/:courseId/settings`
-Использует:
-- `GET /courses/{courseId}`
-- `PUT /courses/{courseId}`
-
-Назначение:
-- настройка публикации курса
-- обновление thumbnail
-- настройка метаданных курса
-
----
-
-#### `/teacher/courses/:courseId/lessons/new`
-Использует:
-- `POST /lessons/course/{courseId}`
-
-Назначение:
-- создание нового урока внутри курса
-
----
-
-#### `/teacher/courses/:courseId/lessons/:lessonId/edit`
-Использует:
-- `GET /lessons/{lessonId}`
-- `PUT /lessons/{lessonId}`
-- `DELETE /lessons/{lessonId}`
-
-Назначение:
-- редактирование или удаление урока
-
----
-
-#### `/teacher/courses/:courseId/lessons/:lessonId/quiz`
-Использует:
-- `POST /quizzes/lesson/{lessonId}`
-- `GET /quizzes/lesson/{lessonId}`
-- `GET /quizzes/{quizId}`
-- `PUT /quizzes/{quizId}`
-- `DELETE /quizzes/{quizId}`
-
-Назначение:
-- создание, просмотр, обновление и удаление квиза
-
----
-
-### ADMIN
-
-#### `/admin/applications`
-Использует:
-- `GET /teacher-applications`
-- `GET /teacher-applications/pending`
-
-Назначение:
-- просмотр всех teacher applications
-- фильтрация pending заявок
-
----
-
-#### `/admin/applications/:applicationId`
-Использует:
-- `POST /teacher-applications/{applicationId}/approve`
-- `POST /teacher-applications/{applicationId}/reject`
-
-Назначение:
-- подтверждение или отклонение teacher application
-
----
-
-### PAYMENT FLOW PAGES
-
-#### `/payment/success`
-Использует:
-- `POST /payments/paypal/orders/capture`
-
-Назначение:
-- финализация PayPal course payment после approve
-
----
-
-#### `/payment/cancel`
-Использует:
-- backend endpoint не требуется
-
-Назначение:
-- страница отменённой оплаты
-
----
-
-### SUBSCRIPTION FLOW PAGES
-
-#### `/subscription/success`
-Использует:
-- `POST /subscriptions/paypal/confirm`
-
-Опционально:
-- `POST /subscriptions/paypal/save-pending`
-
-Назначение:
-- финализация PayPal subscription после approve
-
----
-
-#### `/subscription/cancel`
-Использует:
-- backend endpoint не требуется
-
-Назначение:
-- страница отменённой подписки
-
----
-
-### CERTIFICATES
-
-#### `/student/certificates`
-Использует:
-- `GET /api/certificates/{certificateId}` *(или будущий endpoint списка сертификатов)*
-
-Назначение:
-- просмотр сертификатов студента
-
----
-
-#### `/student/certificates/:certificateId`
-Использует:
-- `GET /api/certificates/{certificateId}`
-- `GET /api/certificates/verify/{verificationCode}`
-
-Назначение:
-- просмотр сертификата
-- проверка подлинности сертификата
-
----
-
-### FILE ACCESS
-
-#### Любая страница с видео, PDF, thumbnail, resume preview
-Использует:
-- `GET /files?path=...`
-
-Назначение:
-- получение загруженных файлов
-- отображение thumbnail
-- открытие lecture PDF
-- загрузка video content
-
----
-
-## Full Backend Endpoint List
-
-### AUTH
-- `POST /auth/register`
-- `POST /auth/login`
-- `POST /auth/verify`
-
-### TEACHER APPLICATIONS
-- `POST /teacher-applications`
-- `GET /teacher-applications`
-- `GET /teacher-applications/pending`
-- `POST /teacher-applications/{applicationId}/approve`
-- `POST /teacher-applications/{applicationId}/reject`
-
-### COURSES
+### Courses
 - `POST /courses`
 - `GET /courses/my`
 - `GET /courses/{courseId}`
 - `PUT /courses/{courseId}`
 - `DELETE /courses/{courseId}`
+- `GET /courses/public`
 
-### LESSONS
+### Lessons
 - `POST /lessons/course/{courseId}`
 - `GET /lessons/course/{courseId}`
 - `GET /lessons/{lessonId}`
 - `PUT /lessons/{lessonId}`
 - `DELETE /lessons/{lessonId}`
 
-### QUIZZES
-- `POST /quizzes/lesson/{lessonId}`
-- `GET /quizzes/lesson/{lessonId}`
-- `GET /quizzes/{quizId}`
-- `PUT /quizzes/{quizId}`
-- `DELETE /quizzes/{quizId}`
+### Enrollments
+- `POST /enrollments/free/{courseId}`
+- `GET /enrollments/check/{courseId}`
+- `GET /enrollments/my`
 
-### PAYMENTS
+### PayPal Payments
 - `POST /payments/paypal/orders/course/{courseId}`
 - `POST /payments/paypal/orders/capture`
 - `GET /payments/paypal/my`
 
-### SUBSCRIPTIONS
+### PayPal Subscriptions
 - `GET /subscriptions/paypal/plan`
 - `POST /subscriptions/paypal/confirm`
 - `POST /subscriptions/paypal/save-pending`
 - `GET /subscriptions/paypal/my`
 
-### ENROLLMENTS
-- `POST /enrollments/free/{courseId}`
-- `GET /enrollments/check/{courseId}`
-- `GET /enrollments/my`
+### Quizzes
+- `POST /quizzes/lesson/{lessonId}`
+- `GET /quizzes/{quizId}`
+- `GET /quizzes/lesson/{lessonId}`
+- `PUT /quizzes/{quizId}`
+- `DELETE /quizzes/{quizId}`
 
-### CERTIFICATES
-- `POST /api/certificates/issue?userId=USER_ID&courseId=COURSE_ID`
-- `POST /api/certificates/{certificateId}/regenerate`
-- `GET /api/certificates/{certificateId}`
+### Quiz Attempts
+- `POST /quiz-attempts/submit`
+- `GET /quiz-attempts/my`
+
+### Progress
+- `POST /progress/complete`
+- `GET /progress`
+- `GET /progress/lesson-unlocked`
+
+### Lesson Comments
+- `POST /lessons/{lessonId}/comments`
+- `GET /lessons/{lessonId}/comments`
+- `GET /lessons/{lessonId}/comments/{commentId}/replies`
+- `PATCH /lessons/{lessonId}/comments/{commentId}/mark-answer`
+- `DELETE /lessons/{lessonId}/comments/{commentId}`
+
+### Course Ratings
+- `POST /courses/{courseId}/ratings`
+- `GET /courses/{courseId}/ratings`
+- `DELETE /courses/{courseId}/ratings`
+
+### Teacher Applications
+- `POST /teacher-applications`
+- `GET /teacher-applications`
+- `GET /teacher-applications/pending`
+- `POST /teacher-applications/{applicationId}/approve`
+- `POST /teacher-applications/{applicationId}/reject`
+- `GET /teacher-applications/{applicationId}/resume`
+
+### Teacher Quiz
+- `GET /api/teacher/quiz/{applicationId}/questions`
+- `POST /api/teacher/quiz/{applicationId}/submit`
+- `GET /api/teacher/quiz/{applicationId}/result`
+
+### Certificates
+- `POST /api/certificates/issue`
+- `POST /api/certificates/{id}/regenerate`
+- `GET /api/certificates/{id}`
 - `GET /api/certificates/verify/{verificationCode}`
 
-### FILES
-- `GET /files?path=...`
 
+---
+---
 
-##  Status
+## Запуск проекта
 
-Active development.
+### Требования
+
+- Java 17+
+- Maven 3.8+
+- MongoDB (локально или Atlas)
+- Python 3.10+ (для AI-сервиса)
+
+### Backend (Spring Boot)
+
+```bash
+# Клонировать репозиторий
+git clone <repo-url>
+cd project
+
+# Настроить application.properties (см. раздел "Переменные окружения")
+
+# Собрать и запустить
+mvn spring-boot:run
+```
+
+### AI-сервис (FastAPI)
+
+```bash
+cd Ai/
+
+# Установить зависимости
+pip install fastapi uvicorn joblib scikit-learn pandas
+
+# Обучить модель (один раз)
+python train_model.py
+
+# Запустить API
+uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+```
+
+> **Важно:** перед запуском API необходимо сгенерировать `resume_model.pkl` через `train_model.py`.
 
 ---
 
-##  Authors
+## ИИ-модуль: Resume Screener
 
-Rinat  
-Miierzhan  
-Rassul  
+Сервис принимает данные резюме и возвращает оценку пригодности кандидата в преподаватели.
+
+### Входные данные (`POST /analyze`)
+
+```json
+{
+  "resumeText": "Python, Machine Learning, NLP...",
+  "specialization": "Data Science",
+  "yearsOfExperience": 4,
+  "education": "M.Tech",
+  "certifications": "AWS Certified",
+  "projectsCount": 5
+}
+```
+
+### Выходные данные
+
+```json
+{
+  "score": 88,
+  "recommendation": "STRONG_FIT",
+  "summary": "Кандидат отлично подходит...",
+  "strengths": "Опыт 4 лет. Сертификация: AWS...",
+  "weaknesses": "Явных слабостей не обнаружено."
+}
+```
+
+### Категории рекомендации
+
+| Категория | Описание |
+|-----------|----------|
+| `STRONG_FIT` | Отличный кандидат |
+| `GOOD_FIT` | Хороший кандидат, небольшие зоны роста |
+| `NEEDS_REVIEW` | Требует дополнительной проверки |
+| `WEAK_FIT` | Слабое соответствие требованиям |
+
+**Аутентификация:** заголовок `X-API-Key: <ключ>` (ключ задаётся через переменную `API_KEY`).
+
+**Health-check:** `GET /health`
+
+---
+
+## Переменные окружения
+
+### Spring Boot (`application.properties`)
+
+```properties
+# MongoDB
+spring.data.mongodb.uri=mongodb://localhost:27017/lms_db
+
+# JWT
+jwt.secret=<минимум 256-бит ключ>
+jwt.expiration=86400000
+
+# Email (SMTP)
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=your@email.com
+spring.mail.password=your_app_password
+
+# Cloudinary
+cloudinary.cloud-name=...
+cloudinary.api-key=...
+cloudinary.api-secret=...
+
+# PayPal
+paypal.client-id=...
+paypal.client-secret=...
+paypal.base-url=https://api-m.sandbox.paypal.com
+
+# AI Service
+ai.service.url=http://localhost:8000
+ai.service.api-key=...
+```
+
+### AI-сервис (`.env` или системные переменные)
+
+```bash
+API_KEY=your_secret_api_key_here
+```
+
+---
+
+## TODO — Будущая работа
+
+# Frontend (React / Next.js)
+Бэкенд полностью готов, но фронтенда нет вообще. Нужно:
+
+Страницы авторизации (регистрация → верификация email → логин)
+Каталог курсов с фильтрацией по категории, уровню, цене
+Личный кабинет студента: мои курсы, прогресс, сертификаты
+Кабинет преподавателя: создание/редактирование курсов, уроков, квизов
+Панель администратора: заявки преподавателей, одобрение/отклонение
+Интеграция PayPal Buttons SDK (для оформления платежей и подписок)
+Просмотрщик уроков с видеоплеером
+
+
+2. Docker / Docker Compose
+Сейчас проект запускается вручную тремя отдельными командами (Spring Boot, FastAPI, MongoDB). Нужно:
+
+Dockerfile для Spring Boot
+Dockerfile для FastAPI AI-сервиса
+docker-compose.yml объединяющий: backend + AI + MongoDB
+.env.example с описанием всех переменных
+
+
+3. Роль ADMIN и панель управления
+В коде упоминается роль ADMIN и логика одобрения преподавателей, но контроллера и сервиса для администратора нет. Нужно:
+
+AdminController с эндпоинтами для управления пользователями
+Просмотр всех заявок (TeacherApplication) в статусе PENDING
+Одобрение / отклонение с сохранением комментария
+Управление публикацией курсов (возможность снятия с публикации)
+
+
+4. Тесты
+Тестов в проекте нет совсем. Критически важно:
+
+Unit-тесты для AuthService, EnrollmentService, CourseProgressService
+Integration-тесты для PayPal-флоу (с mock PayPal API)
+Тест на data leakage для AI-модели (уже исправлен recruiter_hire, но нужна регрессия)
+API-тесты через MockMvc для основных контроллеров
+
+
+5. Конфигурация продакшена
+
+Заменить allowedOriginPatterns(List.of("*")) в SecurityConfig на конкретные домены
+Настроить реальные PayPal credentials (сейчас sandbox)
+Добавить rate limiting на эндпоинты аутентификации (защита от brute-force)
+Настроить HTTPS / SSL
+
+
+6. AI-сервис — улучшения
+
+Добавить Dockerfile и переменные окружения для продакшена
+Расширить набор признаков модели (сейчас только 6 фич — слабо для реального скрининга)
+Добавить логирование запросов к /analyze для мониторинга
+Написать тесты для API с mock-моделью
+
+
+7. Обработка ошибок и логирование
+
+GlobalExceptionHandler уже есть, но не все исключения покрыты единообразно
+Добавить структурированное логирование (JSON logs для продакшена)
+Настроить алерты на критические ошибки (email или Slack)
+
+
+8. Документация API
+
+Добавить @Operation и @ApiResponse аннотации ко всем контроллерам (сейчас только у части)
+Описать все DTO через @Schema
+Добавить примеры запросов/ответов в Swagge
+
+---
+
+## 📄 Лицензия
+
+Дипломный проект. Все права защищены.
+
+---
+
