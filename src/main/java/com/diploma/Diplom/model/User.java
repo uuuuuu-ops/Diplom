@@ -11,26 +11,32 @@ import lombok.Data;
 @Data
 @Document(collection = "users")
 public class User {
-    @Schema(description = "A user of the platform")
+
+    @Schema(description = "Unique identifier of the user")
     @Id
     private String id;
 
-    @Schema(description = "The name of the user")
+    @Schema(description = "Full name of the user")
     private String name;
-    @Schema(description = "The email address of the user")
+
+    @Schema(description = "Email address of the user, used for login and notifications")
     private String email;
-    @Schema(description = "The password of the user (should be stored securely in a real application)")
+
+    @Schema(description = "Hashed password — never returned in API responses")
     private String password;
-    @Schema(description = "The role of the user, either STUDENT or TEACHER")
-    private Role role; 
-    @Schema(description = "The date and time when the user registered on the platform")
+
+    @Schema(description = "Role of the user: STUDENT or TEACHER")
+    private Role role;
+
+    @Schema(description = "PayPal subscription ID, set when the user subscribes to a plan")
     private String subscriptionId;
-    @Schema(description = "The date and time when the user registered on the platform")
+
+    @Schema(description = "Date and time when the user registered on the platform")
     private LocalDateTime createdAt;
-    @Schema(description = "The date and time when the user registered on the platform")
+
+    @Schema(description = "Whether the user's email has been verified")
     private boolean enabled;
-    @Schema(description = "Indicates whether the teacher has been approved by an admin after passing the qualification quiz")
+
+    @Schema(description = "Whether the teacher has been approved by an admin after passing the qualification quiz")
     private boolean teacherApproved;
-
-
 }

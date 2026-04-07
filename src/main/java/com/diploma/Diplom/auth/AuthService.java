@@ -7,14 +7,17 @@ import com.diploma.Diplom.repository.UserRepository;
 import com.diploma.Diplom.repository.VerificationCodeRepository;
 import com.diploma.Diplom.security.JwtService;
 import com.diploma.Diplom.service.EmailService;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Random;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -23,17 +26,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final EmailService emailService;
 
-    public AuthService(UserRepository userRepository,
-                       VerificationCodeRepository verificationCodeRepository,
-                       PasswordEncoder passwordEncoder,
-                       JwtService jwtService,
-                       EmailService emailService) {
-        this.userRepository = userRepository;
-        this.verificationCodeRepository = verificationCodeRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.emailService = emailService;
-    }
+    private final SecureRandom secureRandom = new SecureRandom();
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -44,14 +37,13 @@ public class AuthService {
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(request.getRole() != null ? request.getRole() : Role.STUDENT);
+        user.setRole(Role.STUDENT);
         user.setEnabled(false);
 
         userRepository.save(user);
 
         String code = generateCode();
 
-        // FIX: старый код удаляется перед созданием нового (при повторной регистрации)
         verificationCodeRepository.findByEmail(request.getEmail())
                 .ifPresent(verificationCodeRepository::delete);
 
@@ -61,10 +53,10 @@ public class AuthService {
         verificationCode.setExpiresAt(LocalDateTime.now().plusMinutes(10));
         verificationCodeRepository.save(verificationCode);
 
-        // FIX: если email не отправился — удаляем пользователя чтобы не осталось "мёртвых" записей
         try {
             emailService.sendVerificationEmail(request.getEmail(), code);
         } catch (Exception e) {
+            log.error("Failed to send verification email to {}: {}", request.getEmail(), e.getMessage());
             userRepository.delete(user);
             verificationCodeRepository.delete(verificationCode);
             throw new RuntimeException("Failed to send verification email. Please try again.");
@@ -99,10 +91,10 @@ public class AuthService {
 
         if (!user.isEnabled()) {
             throw new RuntimeException("Account is not verified");
-       }
+        }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-        throw new RuntimeException("Invalid password");
+            throw new RuntimeException("Invalid password");
         }
 
         String token = jwtService.generateToken(user);
@@ -117,8 +109,7 @@ public class AuthService {
     }
 
     private String generateCode() {
-        Random random = new Random();
-        int number = 100000 + random.nextInt(900000);
+        int number = 100000 + secureRandom.nextInt(900000);
         return String.valueOf(number);
     }
 }
