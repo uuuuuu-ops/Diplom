@@ -51,17 +51,24 @@ public class AuthService {
 
         String code = generateCode();
 
-        VerificationCode verificationCode = verificationCodeRepository
-                .findByEmail(request.getEmail())
-                .orElse(new VerificationCode());
+        // FIX: старый код удаляется перед созданием нового (при повторной регистрации)
+        verificationCodeRepository.findByEmail(request.getEmail())
+                .ifPresent(verificationCodeRepository::delete);
 
+        VerificationCode verificationCode = new VerificationCode();
         verificationCode.setEmail(request.getEmail());
         verificationCode.setCode(code);
         verificationCode.setExpiresAt(LocalDateTime.now().plusMinutes(10));
-
         verificationCodeRepository.save(verificationCode);
 
-        emailService.sendVerificationEmail(request.getEmail(), code);
+        // FIX: если email не отправился — удаляем пользователя чтобы не осталось "мёртвых" записей
+        try {
+            emailService.sendVerificationEmail(request.getEmail(), code);
+        } catch (Exception e) {
+            userRepository.delete(user);
+            verificationCodeRepository.delete(verificationCode);
+            throw new RuntimeException("Failed to send verification email. Please try again.");
+        }
 
         return new AuthResponse("Verification code sent to email");
     }

@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,6 +39,7 @@ public class EnrollmentController {
         }
     )
     @PostMapping("/free/{courseId}")
+    @PreAuthorize("hasRole('STUDENT')")
     public Enrollment enrollFreeCourse(
             @Parameter(description = "Free course ID") @PathVariable String courseId) {
         return enrollmentService.enrollFreeCourse(courseId);
@@ -47,8 +49,8 @@ public class EnrollmentController {
         summary = "Check if the current user has access to a course",
         description = """
             Returns `{ "hasAccess": true/false }`. Access is granted when:
-            - The course is free, **or**
-            - The user has an active enrollment (purchased), **or**
+            - The course is free, or
+            - The user has an active enrollment (purchased), or
             - The user has an active subscription.
             """,
         responses = @ApiResponse(responseCode = "200",

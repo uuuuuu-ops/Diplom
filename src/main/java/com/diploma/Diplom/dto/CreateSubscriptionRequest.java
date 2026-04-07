@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class CreateSubscriptionRequest {
-    private String planCode; // ALL_ACCESS
+    private String planCode; 
 }

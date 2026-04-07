@@ -85,6 +85,12 @@ public class FileController {
     @GetMapping
     public ResponseEntity<Resource> getFile(@RequestParam("path") String filePath) {
         try {
+            // FIX: добавлена проверка расширения файла — запрет на .java, .class, .properties и т.д.
+            String lower = filePath.toLowerCase();
+            if (!isAllowedExtension(lower)) {
+                throw new RuntimeException("File type not allowed");
+            }
+
             Path rootPath = Paths.get(uploadRootDir).toAbsolutePath().normalize();
             Path resolvedPath = rootPath.resolve(filePath.replace("\\", "/")).normalize();
 
@@ -116,6 +122,13 @@ public class FileController {
         } catch (MalformedURLException e) {
             throw new RuntimeException("Failed to read file: " + e.getMessage(), e);
         }
+    }
+
+    private boolean isAllowedExtension(String fileName) {
+        return fileName.endsWith(".pdf") || fileName.endsWith(".png") ||
+               fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") ||
+               fileName.endsWith(".gif") || fileName.endsWith(".mp4") ||
+               fileName.endsWith(".webm");
     }
 
     private String detectContentType(Path path) {

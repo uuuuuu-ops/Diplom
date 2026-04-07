@@ -1,0 +1,8 @@
+// PaymentException.java
+package com.diploma.Diplom.exception;
+
+public class PaymentException extends RuntimeException {
+    public PaymentException(String message) {
+        super(message);
+    }
+}

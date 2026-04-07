@@ -2,6 +2,8 @@ package com.diploma.Diplom.controller;
 
 import com.diploma.Diplom.dto.TeacherApplicationRequest;
 import com.diploma.Diplom.model.TeacherApplication;
+import com.diploma.Diplom.model.User;
+import com.diploma.Diplom.repository.UserRepository;
 import com.diploma.Diplom.service.TeacherApplicationService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,17 +35,17 @@ import java.util.List;
 public class TeacherApplicationController {
 
     private final TeacherApplicationService teacherApplicationService;
+    // FIX: добавлен UserRepository для получения реального _id пользователя
+    private final UserRepository userRepository;
 
-    public TeacherApplicationController(TeacherApplicationService teacherApplicationService) {
+    public TeacherApplicationController(TeacherApplicationService teacherApplicationService,
+                                        UserRepository userRepository) {
         this.teacherApplicationService = teacherApplicationService;
+        this.userRepository = userRepository;
     }
 
     @Operation(
         summary = "Submit a teacher application (TEACHER role required)",
-        description = """
-            A user with TEACHER role submits their credentials for admin review.
-            Upload a resume PDF. The application starts in PENDING state.
-            """,
         responses = {
             @ApiResponse(responseCode = "200", description = "Application submitted",
                 content = @Content(schema = @Schema(implementation = TeacherApplication.class))),
@@ -62,8 +64,12 @@ public class TeacherApplicationController {
             @Parameter(description = "Resume PDF file")
             @RequestParam("resumeFile") MultipartFile resumeFile
     ) {
+        // FIX: было principal.getName() (email) — теперь берём настоящий MongoDB _id
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         TeacherApplicationRequest request = new TeacherApplicationRequest();
-        request.setUserId(principal.getName());
+        request.setUserId(user.getId()); // правильный _id, не email
         request.setFullName(fullName);
         request.setEmail(email);
         request.setSpecialization(specialization);

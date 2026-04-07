@@ -6,29 +6,38 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.Data;
-
+import io.swagger.v3.oas.annotations.media.Schema;
+@Schema(description = "A certificate for completing a course")
 @Data
 @Document(collection = "certificates")
 public class Certificate {
-
+    @Schema(description = "MongoDB ObjectId")
     @Id
     private String id;
-
+    @Schema(description = "ID of the student who earned the certificate")
     private String userId;
+    @Schema(description = "ID of the course for which the certificate was issued")
     private String courseId;
 
+    @Schema(description = "Name of the student who earned the certificate")
     private String studentName;
+    @Schema(description = "Title of the course for which the certificate was issued")
     private String courseTitle;
+    @Schema(description = "Name of the instructor who taught the course")
     private String instructorName;
 
+    @Schema(description = "Unique number for the certificate, used for verification")
     private String certificateNumber;
+    @Schema(description = "Verification code for the certificate, used for verification")
     private String verificationCode;
-
+    @Schema(description = "Timestamp when the certificate was issued", example = "2023-01-01T00:00:00")
     private LocalDateTime issuedAt;
+    @Schema(description = "Timestamp when the certificate was regenerated", example = "2023-01-01T00:00:00")
     private LocalDateTime regeneratedAt;
-
+    @Schema(description = "Version of the certificate template used to generate this certificate")
     private String templateVersion;
+    @Schema(description = "URL to the PDF version of the certificate")
     private String pdfUrl;
-
+    @Schema(description = "Indicates whether the certificate is active and valid for verification")
     private boolean active;
 }
