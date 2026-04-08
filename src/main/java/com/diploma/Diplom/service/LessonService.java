@@ -2,6 +2,8 @@ package com.diploma.Diplom.service;
 
 import com.diploma.Diplom.dto.CreateLessonRequest;
 import com.diploma.Diplom.dto.UpdateLessonRequest;
+import com.diploma.Diplom.exception.ForbiddenException;
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.Course;
 import com.diploma.Diplom.model.Lesson;
 import com.diploma.Diplom.model.Role;
@@ -41,7 +43,7 @@ public class LessonService {
         User user = getApprovedTeacher(teacherEmail);
 
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         validateCourseOwnership(user, course);
 
@@ -58,13 +60,13 @@ public class LessonService {
 
         if (videoFile != null && !videoFile.isEmpty()) {
         if (lesson.getVideoPublicId() != null) {
-            cloudinaryService.deleteFile(lesson.getVideoPublicId()); // ← publicId
+            cloudinaryService.deleteFile(lesson.getVideoPublicId()); 
         }
         CloudinaryService.FileUploadResult uploaded =
             cloudinaryService.uploadFile(videoFile, "videos");
         lesson.setVideoUrl(uploaded.getFileUrl());
         lesson.setVideoFileName(uploaded.getFileName());
-        lesson.setVideoPublicId(uploaded.getPublicId()); // ← сохраняем
+        lesson.setVideoPublicId(uploaded.getPublicId()); 
     }
 
         if (lecturePdfFile != null && !lecturePdfFile.isEmpty()) {
@@ -75,7 +77,7 @@ public class LessonService {
                 cloudinaryService.uploadFile(lecturePdfFile, "lecture-pdfs");
         lesson.setLecturePdfUrl(uploaded.getFileUrl());
         lesson.setLecturePdfFileName(uploaded.getFileName());
-        lesson.setLecturePdfPublicId(uploaded.getPublicId()); // ← сохраняем
+        lesson.setLecturePdfPublicId(uploaded.getPublicId()); 
     }
 
         return lessonRepository.save(lesson);
@@ -87,7 +89,7 @@ public class LessonService {
 
     public Lesson getLessonById(String lessonId) {
         return lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
     }
 
     public Lesson updateLesson(String teacherEmail,
@@ -98,10 +100,10 @@ public class LessonService {
         User user = getApprovedTeacher(teacherEmail);
 
         Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
         Course course = courseRepository.findById(lesson.getCourseId())
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         validateCourseOwnership(user, course);
 
@@ -140,10 +142,10 @@ public class LessonService {
         User user = getApprovedTeacher(teacherEmail);
 
         Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
         Course course = courseRepository.findById(lesson.getCourseId())
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         validateCourseOwnership(user, course);
 
@@ -156,20 +158,20 @@ public class LessonService {
 
     private User getApprovedTeacher(String teacherEmail) {
         User user = userRepository.findByEmail(teacherEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getRole() != Role.TEACHER) {
-            throw new RuntimeException("Only teachers can manage lessons");
+            throw new ForbiddenException("Only teachers can manage lessons");
         }
         if (!user.isTeacherApproved()) {
-            throw new RuntimeException("Only approved teachers can manage lessons");
+            throw new ForbiddenException("Only approved teachers can manage lessons");
         }
         return user;
     }
 
     private void validateCourseOwnership(User user, Course course) {
         if (!course.getTeacherId().equals(user.getId())) {
-            throw new RuntimeException("You can manage only your own course lessons");
+            throw new ForbiddenException("You can manage only your own course lessons");
         }
     }
 }

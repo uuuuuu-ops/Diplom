@@ -1,6 +1,7 @@
 package com.diploma.Diplom.controller;
 
 import com.diploma.Diplom.dto.ConfirmPaypalSubscriptionRequest;
+import com.diploma.Diplom.dto.SavePendingSubscriptionRequest;
 import com.diploma.Diplom.model.Subscription;
 import com.diploma.Diplom.service.PaypalSubscriptionService;
 import com.diploma.Diplom.service.SubscriptionService;
@@ -79,9 +80,12 @@ public class SubscriptionController {
             content = @Content(schema = @Schema(implementation = Subscription.class)))
     )
     @PostMapping("/save-pending")
-    public Subscription savePending(@RequestBody ConfirmPaypalSubscriptionRequest request) {
+    public Subscription savePending(@RequestBody SavePendingSubscriptionRequest request) {
+        String planCode = (request.getPlanCode() != null && !request.getPlanCode().isBlank())
+                ? request.getPlanCode()
+                : "PRO";
         return paypalSubscriptionService.savePendingSubscription(
-                request.getSubscriptionId(), "PRO");
+                request.getSubscriptionId(), planCode);
     }
 
     @Operation(

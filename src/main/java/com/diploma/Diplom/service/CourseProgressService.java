@@ -7,6 +7,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.diploma.Diplom.exception.ForbiddenException;
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.CourseProgress;
 import com.diploma.Diplom.model.Lesson;
 import com.diploma.Diplom.model.Quiz;
@@ -46,16 +48,16 @@ public class CourseProgressService {
      */
     public CourseProgress markLessonCompleted(String userId, String courseId, String lessonId) {
         Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
         if (lesson.isQuizRequired()) {
             Quiz quiz = quizRepository.findByLessonId(lessonId)
-                    .orElseThrow(() -> new RuntimeException(
+                    .orElseThrow(() -> new ResourceNotFoundException(
                             "This lesson requires a quiz but no quiz was found. Contact your teacher."));
 
             CourseProgress progress = getOrCreateProgress(userId, courseId);
             if (!progress.getPassedQuizIds().contains(quiz.getId())) {
-                throw new RuntimeException(
+                throw new ForbiddenException(
                         "You must pass this lesson's quiz before marking it complete.");
             }
         }
@@ -85,7 +87,7 @@ public class CourseProgressService {
      */
     public boolean isLessonUnlocked(String userId, String courseId, String lessonId) {
         Lesson target = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
         // first lesson is always unlocked
         if (target.getOrderIndex() == 0) return true;
@@ -118,7 +120,7 @@ public class CourseProgressService {
 
     public CourseProgress getProgressByLessonId(String userId, String lessonId) {
         Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
         return getProgress(userId, lesson.getCourseId());
     }
 

@@ -1,5 +1,6 @@
 package com.diploma.Diplom.auth;
 
+import com.diploma.Diplom.exception.*;
 import com.diploma.Diplom.model.Role;
 import com.diploma.Diplom.model.User;
 import com.diploma.Diplom.model.VerificationCode;
@@ -30,7 +31,7 @@ public class AuthService {
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("User with this email already exists");
+            throw new ConflictException("User with this email already exists");
         }
 
         User user = new User();
@@ -59,7 +60,7 @@ public class AuthService {
             log.error("Failed to send verification email to {}: {}", request.getEmail(), e.getMessage());
             userRepository.delete(user);
             verificationCodeRepository.delete(verificationCode);
-            throw new RuntimeException("Failed to send verification email. Please try again.");
+            throw new InternalServerException("Failed to send verification email. Please try again later.");
         }
 
         return new AuthResponse("Verification code sent to email");
@@ -68,14 +69,14 @@ public class AuthService {
     public String verify(VerifyRequest request) {
         VerificationCode verificationCode = verificationCodeRepository
                 .findByEmailAndCode(request.getEmail(), request.getCode())
-                .orElseThrow(() -> new RuntimeException("Invalid verification code"));
+                .orElseThrow(() -> new UnauthorizedException("Invalid verification code"));
 
         if (verificationCode.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Verification code expired");
+            throw new UnauthorizedException("Verification code expired");
         }
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         user.setEnabled(true);
         userRepository.save(user);
@@ -87,14 +88,14 @@ public class AuthService {
 
     public AuthResponse login(AuthRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!user.isEnabled()) {
-            throw new RuntimeException("Account is not verified");
+            throw new ForbiddenException("Account is not verified");
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid password");
+            throw new BadRequestException("Invalid password");
         }
 
         String token = jwtService.generateToken(user);

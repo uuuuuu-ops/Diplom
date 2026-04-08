@@ -1,13 +1,13 @@
 package com.diploma.Diplom.service;
 
 import com.diploma.Diplom.exception.PaymentException;
-import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.Subscription;
 import com.diploma.Diplom.util.SecurityUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 
 import java.util.Map;
 
@@ -60,12 +60,12 @@ public class PaypalSubscriptionService {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
 
-        ResponseEntity<Map> response = restTemplate.exchange(
-                paypalBaseUrl + "/v1/billing/subscriptions/" + paypalSubscriptionId,
-                HttpMethod.GET,
-                new HttpEntity<>(headers),
-                Map.class
-        );
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+            paypalBaseUrl + "/v1/billing/subscriptions/" + paypalSubscriptionId,
+            HttpMethod.GET,
+            new HttpEntity<>(headers),
+            new ParameterizedTypeReference<Map<String, Object>>() {}
+    );
 
         Map<String, Object> body = response.getBody();
         if (body == null) {

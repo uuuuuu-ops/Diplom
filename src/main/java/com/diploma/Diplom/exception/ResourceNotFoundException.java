@@ -1,4 +1,3 @@
-// ResourceNotFoundException.java
 package com.diploma.Diplom.exception;
 
 public class ResourceNotFoundException extends RuntimeException {

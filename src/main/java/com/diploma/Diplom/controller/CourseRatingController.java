@@ -3,6 +3,7 @@ package com.diploma.Diplom.controller;
 import java.security.Principal;
 import java.util.List;
 
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -105,6 +106,6 @@ public class CourseRatingController {
 
     private User getCurrentUser(Principal principal) {
         return userRepository.findByEmail(principal.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }

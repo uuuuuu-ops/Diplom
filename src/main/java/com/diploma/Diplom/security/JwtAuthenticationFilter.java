@@ -34,26 +34,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        System.out.println("=== JWT FILTER START ===");
-        System.out.println("URI: " + request.getRequestURI());
-        System.out.println("Authorization header: " + authHeader);
+
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
-            System.out.println("Token received: " + token);
 
             boolean valid = jwtService.validateToken(token);
             System.out.println("Token valid: " + valid);
 
             if (valid) {
                 String email = jwtService.extractUsername(token);
-                System.out.println("Email from token: " + email);
 
                 User user = userRepository.findByEmail(email).orElse(null);
-                System.out.println("User found: " + (user != null));
 
                 if (user != null) {
-                    System.out.println("User role: " + user.getRole());
 
                     List<SimpleGrantedAuthority> authorities = List.of(
                             new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
@@ -64,7 +58,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                    System.out.println("Authentication set in SecurityContext");
                 }
             }
         }

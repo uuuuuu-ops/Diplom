@@ -18,13 +18,13 @@ public class TeacherQuizAttempt {
     @Schema(description = "The ID of the teacher application associated with this quiz attempt")
     private String applicationId;
     @Schema(description = "The topic or specialization related to the quiz attempt, e.g. 'Java', 'Python', 'Data Science'")
-    private String topic;           // специализация учителя
+    private String topic;           
     @Schema(description = "The list of answers provided by the teacher for each quiz question")
     private List<QuizAnswer> answers;
     @Schema(description = "The score achieved by the teacher in the quiz, ranging from 0 to 100")
-    private int score;              // 0-100
+    private int score;            
     @Schema(description = "Indicates whether the teacher has passed the quiz based on the score and passing threshold")
-    private boolean passed;         // score >= 60
+    private boolean passed;        
     @Schema(description = "The date and time when the quiz was taken")
     private LocalDateTime takenAt;
     @Schema(description = "The date and time when the quiz attempt record was created")

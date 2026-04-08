@@ -1,5 +1,6 @@
 package com.diploma.Diplom.util;
 
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.repository.UserRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -19,7 +20,7 @@ public class SecurityUtils {
                 .getName();
 
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"))
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"))
                 .getId();
     }
 }

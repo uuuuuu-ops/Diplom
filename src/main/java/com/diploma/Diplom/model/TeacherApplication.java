@@ -52,9 +52,9 @@ public class TeacherApplication {
     @Schema(description = "The public ID of the resume file in Cloudinary, if uploaded")
     private String resumePublicId;
     @Schema(description = "The score of the quiz taken by the applicant, if applicable (0-100)")
-    private Integer quizScore;       // скор квиза 0-100
+    private Integer quizScore;       
     @Schema(description = "Whether the applicant passed the quiz based on the passing score threshold")
-    private Boolean quizPassed;      // прошёл/не прошёл
+    private Boolean quizPassed;      
     @Schema(description = "The ID of the quiz attempt made by the applicant, if applicable")
-    private String quizAttemptId;    // ссылка на попытку
+    private String quizAttemptId;   
 }

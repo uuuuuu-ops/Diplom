@@ -2,73 +2,73 @@ package com.diploma.Diplom.service;
 
 import com.diploma.Diplom.dto.CreateCourseRequest;
 import com.diploma.Diplom.dto.UpdateCourseRequest;
+import com.diploma.Diplom.exception.BadRequestException;
+import com.diploma.Diplom.exception.ForbiddenException;
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.Course;
 import com.diploma.Diplom.model.Role;
 import com.diploma.Diplom.model.User;
 import com.diploma.Diplom.repository.CourseRepository;
 import com.diploma.Diplom.repository.LessonRepository;
 import com.diploma.Diplom.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class CourseService {
+
+    private static final String DEFAULT_CURRENCY = "USD";
+    private static final String THUMBNAILS_FOLDER = "thumbnails";
 
     private final CourseRepository courseRepository;
     private final LessonRepository lessonRepository;
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
 
-    public CourseService(CourseRepository courseRepository,
-                         LessonRepository lessonRepository,
-                         UserRepository userRepository,
-                         CloudinaryService cloudinaryService) {
-        this.courseRepository = courseRepository;
-        this.lessonRepository = lessonRepository;
-        this.userRepository = userRepository;
-        this.cloudinaryService = cloudinaryService;
-    }
+    public Course createCourse(String teacherEmail,
+                               CreateCourseRequest request,
+                               MultipartFile thumbnailFile) {
+        User user = getApprovedTeacher(teacherEmail);
 
-   public Course createCourse(String teacherEmail,
-                           CreateCourseRequest request,
-                           MultipartFile thumbnailFile) {
+        Course course = new Course();
+        course.setTeacherId(user.getId());
+        course.setTitle(request.getTitle());
+        course.setDescription(request.getDescription());
+        course.setCategory(request.getCategory());
+        course.setLevel(request.getLevel());
+        course.setPublished(request.getPublished() != null ? request.getPublished() : false);
+        course.setFree(request.getFree());
+        course.setCurrency(DEFAULT_CURRENCY);
 
-    User user = getApprovedTeacher(teacherEmail);
-
-    Course course = new Course();
-    course.setTeacherId(user.getId());
-    course.setTitle(request.getTitle());
-    course.setDescription(request.getDescription());
-    course.setCategory(request.getCategory());
-    course.setLevel(request.getLevel());
-    course.setPublished(request.getPublished() != null ? request.getPublished() : false);
-
-    course.setFree(request.isFree());
-
-    if (request.isFree()) {
-        course.setPrice(java.math.BigDecimal.ZERO);
-    } else {
+        if (Boolean.TRUE.equals(request.getFree())) {
+            course.setPrice(BigDecimal.ZERO);
+        } else {
         if (request.getPrice() == null) {
-            throw new RuntimeException("Price is required for paid course");
+            throw new BadRequestException("Price is required for paid course");
         }
         course.setPrice(request.getPrice());
+        }
+
+        if (thumbnailFile != null && !thumbnailFile.isEmpty()) {
+            CloudinaryService.FileUploadResult uploaded =
+                    cloudinaryService.uploadFile(thumbnailFile, THUMBNAILS_FOLDER);
+            course.setThumbnail(uploaded.getFileUrl());
+            course.setThumbnailPublicId(uploaded.getPublicId());
+        }
+
+        course.setCreatedAt(LocalDateTime.now());
+        course.setUpdatedAt(LocalDateTime.now());
+
+        return courseRepository.save(course);
     }
-
-    course.setCurrency("USD");
-
-    course.setCreatedAt(LocalDateTime.now());
-    course.setUpdatedAt(LocalDateTime.now());
-
-    CloudinaryService.FileUploadResult uploaded =
-        cloudinaryService.uploadFile(thumbnailFile, "thumbnails");
-    course.setThumbnail(uploaded.getFileUrl());
-    course.setThumbnailPublicId(uploaded.getPublicId()); 
-
-    return courseRepository.save(course);
-}
 
     public List<Course> getTeacherCourses(String teacherEmail) {
         User user = getApprovedTeacher(teacherEmail);
@@ -77,7 +77,7 @@ public class CourseService {
 
     public Course getCourseById(String courseId) {
         return courseRepository.findById(courseId)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found: " + courseId));
     }
 
     public Course updateCourse(String teacherEmail,
@@ -87,7 +87,7 @@ public class CourseService {
         User user = getApprovedTeacher(teacherEmail);
 
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found: " + courseId));
 
         validateCourseOwnership(user, course);
 
@@ -97,13 +97,15 @@ public class CourseService {
         if (request.getLevel() != null) course.setLevel(request.getLevel());
         if (request.getPublished() != null) course.setPublished(request.getPublished());
 
-        if (course.getThumbnailPublicId() != null) {
-            cloudinaryService.deleteFile(course.getThumbnailPublicId());
+        if (thumbnailFile != null && !thumbnailFile.isEmpty()) {
+            if (course.getThumbnailPublicId() != null) {
+                cloudinaryService.deleteFile(course.getThumbnailPublicId());
+            }
+            CloudinaryService.FileUploadResult uploaded =
+                    cloudinaryService.uploadFile(thumbnailFile, THUMBNAILS_FOLDER);
+            course.setThumbnail(uploaded.getFileUrl());
+            course.setThumbnailPublicId(uploaded.getPublicId());
         }
-        CloudinaryService.FileUploadResult uploaded =
-                cloudinaryService.uploadFile(thumbnailFile, "thumbnails");
-        course.setThumbnail(uploaded.getFileUrl());
-        course.setThumbnailPublicId(uploaded.getPublicId());
 
         course.setUpdatedAt(LocalDateTime.now());
         return courseRepository.save(course);
@@ -113,26 +115,31 @@ public class CourseService {
         User user = getApprovedTeacher(teacherEmail);
 
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found: " + courseId));
 
         validateCourseOwnership(user, course);
 
         if (course.getThumbnailPublicId() != null) {
             cloudinaryService.deleteFile(course.getThumbnailPublicId());
-        }        
+        }
+
         lessonRepository.deleteAll(lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId));
         courseRepository.delete(course);
     }
 
+    public List<Course> getPublicCourses() {
+        return courseRepository.findByPublishedTrue();
+    }
+
     private User getApprovedTeacher(String teacherEmail) {
         User user = userRepository.findByEmail(teacherEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + teacherEmail));
 
         if (user.getRole() != Role.TEACHER) {
-            throw new RuntimeException("Only teachers can manage courses");
+            throw new ForbiddenException("Only teachers can manage courses");
         }
         if (!user.isTeacherApproved()) {
-            throw new RuntimeException("Only approved teachers can manage courses");
+            throw new ForbiddenException("Only approved teachers can manage courses");
         }
 
         return user;
@@ -140,12 +147,7 @@ public class CourseService {
 
     private void validateCourseOwnership(User user, Course course) {
         if (!course.getTeacherId().equals(user.getId())) {
-            throw new RuntimeException("You can manage only your own courses");
+            throw new ForbiddenException("You can manage only your own courses");
         }
     }
-
-    public List<Course> getPublicCourses() {
-    return courseRepository.findByPublishedTrue();
-}
-
 }

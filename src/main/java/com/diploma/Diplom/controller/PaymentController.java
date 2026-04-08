@@ -3,9 +3,9 @@ package com.diploma.Diplom.controller;
 import com.diploma.Diplom.dto.CapturePaypalOrderRequest;
 import com.diploma.Diplom.dto.CreatePaypalOrderResponse;
 import com.diploma.Diplom.model.Payment;
-import com.diploma.Diplom.service.EnrollmentService;
 import com.diploma.Diplom.service.PaymentService;
 import com.diploma.Diplom.service.PaypalService;
+import com.diploma.Diplom.util.SecurityUtils;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -27,14 +27,14 @@ public class PaymentController {
 
     private final PaypalService paypalService;
     private final PaymentService paymentService;
-    private final EnrollmentService enrollmentService;
+    private final SecurityUtils securityUtils;
 
     public PaymentController(PaypalService paypalService,
                              PaymentService paymentService,
-                             EnrollmentService enrollmentService) {
+                             SecurityUtils securityUtils) {
         this.paypalService = paypalService;
         this.paymentService = paymentService;
-        this.enrollmentService = enrollmentService;
+        this.securityUtils = securityUtils;
     }
 
     @Operation(
@@ -49,7 +49,8 @@ public class PaymentController {
         responses = {
             @ApiResponse(responseCode = "200", description = "Order created",
                 content = @Content(schema = @Schema(implementation = CreatePaypalOrderResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Course not found", content = @Content)
+            @ApiResponse(responseCode = "404", description = "Course not found", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Already enrolled", content = @Content)
         }
     )
     @PostMapping("/orders/course/{courseId}")
@@ -71,8 +72,9 @@ public class PaymentController {
         responses = {
             @ApiResponse(responseCode = "200", description = "Payment captured and enrollment activated",
                 content = @Content(schema = @Schema(implementation = Payment.class))),
-            @ApiResponse(responseCode = "400", description = "PayPal order not approved or already captured",
-                content = @Content)
+            @ApiResponse(responseCode = "400", description = "PayPal order not approved or already failed",
+                content = @Content),
+            @ApiResponse(responseCode = "403", description = "Access denied", content = @Content)
         }
     )
     @PostMapping("/orders/capture")
@@ -88,7 +90,6 @@ public class PaymentController {
     )
     @GetMapping("/my")
     public List<Payment> getMyPayments() {
-        String userId = enrollmentService.getCurrentUserId();
-        return paymentService.getPaymentsByUser(userId);
+        return paymentService.getPaymentsByUser(securityUtils.getCurrentUserId());
     }
 }

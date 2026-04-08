@@ -4,12 +4,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import io.swagger.v3.oas.annotations.media.Schema;
+
+
 @Schema(description = "Authentication response containing user tokens and information after login")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuthResponse {
-    
+
     @Schema(description = "The authentication token for the user, used for subsequent requests to protected endpoints")
     private String token;
     @Schema(description = "A message related to the authentication process")
@@ -23,5 +25,15 @@ public class AuthResponse {
     @Schema(description = "The name of the authenticated user")
     private String name;
 
-    
+    public AuthResponse(String message) {
+    this.message = message;
+    }
+
+    public AuthResponse(String token, String role, Boolean teacherApproved, String email, String name) {
+        this.token = token;
+        this.role = role;
+        this.teacherApproved = teacherApproved;
+        this.email = email;
+        this.name = name;
+    }
 }

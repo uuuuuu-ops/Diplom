@@ -2,6 +2,7 @@ package com.diploma.Diplom.service;
 
 import org.springframework.stereotype.Service;
 
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.Lesson;
 import com.diploma.Diplom.repository.LessonRepository;
 
@@ -21,13 +22,13 @@ public class LessonProgressService {
 
     public void completeLesson(String userId, String lessonId) {
         Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
         courseProgressService.markLessonCompleted(userId, lesson.getCourseId(), lessonId);
     }
     public String getCourseIdByLessonId(String lessonId) {
     Lesson lesson = lessonRepository.findById(lessonId)
-            .orElseThrow(() -> new RuntimeException("Lesson not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
     return lesson.getCourseId();
 }

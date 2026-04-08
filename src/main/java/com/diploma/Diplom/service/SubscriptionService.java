@@ -1,10 +1,10 @@
 package com.diploma.Diplom.service;
 
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.Subscription;
 import com.diploma.Diplom.model.SubscriptionStatus;
 import com.diploma.Diplom.repository.SubscriptionRepository;
-import com.diploma.Diplom.repository.UserRepository;
-import org.springframework.security.core.context.SecurityContextHolder;
+import com.diploma.Diplom.util.SecurityUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -14,22 +14,12 @@ import java.util.List;
 public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
-    private final UserRepository userRepository;
+    private final SecurityUtils securityUtils;
 
     public SubscriptionService(SubscriptionRepository subscriptionRepository,
-                               UserRepository userRepository) {
+                               SecurityUtils securityUtils) {
         this.subscriptionRepository = subscriptionRepository;
-        this.userRepository = userRepository;
-    }
-
-    public String getCurrentUserId() {
-        String email = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
-
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"))
-                .getId();
+        this.securityUtils = securityUtils;
     }
 
     public boolean hasActiveSubscription(String userId) {
@@ -40,7 +30,6 @@ public class SubscriptionService {
                                                   String planCode,
                                                   String paypalPlanId,
                                                   String paypalSubscriptionId) {
-
         Subscription subscription = new Subscription();
         subscription.setUserId(userId);
         subscription.setPlanCode(planCode);
@@ -55,28 +44,27 @@ public class SubscriptionService {
     }
 
     public Subscription activateSubscription(String paypalSubscriptionId) {
-        Subscription subscription = subscriptionRepository.findByPaypalSubscriptionId(paypalSubscriptionId)
-                .orElseThrow(() -> new RuntimeException("Subscription not found"));
-
+        Subscription subscription = getByPaypalSubscriptionId(paypalSubscriptionId);
         subscription.setStatus(SubscriptionStatus.ACTIVE);
         subscription.setStartedAt(LocalDateTime.now());
         subscription.setUpdatedAt(LocalDateTime.now());
-
         return subscriptionRepository.save(subscription);
     }
 
     public Subscription cancelSubscription(String paypalSubscriptionId) {
-        Subscription subscription = subscriptionRepository.findByPaypalSubscriptionId(paypalSubscriptionId)
-                .orElseThrow(() -> new RuntimeException("Subscription not found"));
-
+        Subscription subscription = getByPaypalSubscriptionId(paypalSubscriptionId);
         subscription.setStatus(SubscriptionStatus.CANCELLED);
         subscription.setEndedAt(LocalDateTime.now());
         subscription.setUpdatedAt(LocalDateTime.now());
-
         return subscriptionRepository.save(subscription);
     }
 
     public List<Subscription> getMySubscriptions() {
-        return subscriptionRepository.findByUserId(getCurrentUserId());
+        return subscriptionRepository.findByUserId(securityUtils.getCurrentUserId());
+    }
+
+    private Subscription getByPaypalSubscriptionId(String paypalSubscriptionId) {
+        return subscriptionRepository.findByPaypalSubscriptionId(paypalSubscriptionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Subscription not found: " + paypalSubscriptionId));
     }
 }

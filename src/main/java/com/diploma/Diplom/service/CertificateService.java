@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 
 import com.diploma.Diplom.dto.CertificateResponse;
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.Certificate;
 import com.diploma.Diplom.model.Course;
 import com.diploma.Diplom.model.User;
@@ -35,10 +36,10 @@ public class CertificateService {
 
     public CertificateResponse issueCertificate(String userId, String courseId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         Certificate certificate = new Certificate();
         certificate.setUserId(userId);
@@ -70,13 +71,13 @@ public class CertificateService {
 
     public CertificateResponse regenerateCertificate(String certificateId) {
         Certificate certificate = certificateRepository.findById(certificateId)
-                .orElseThrow(() -> new RuntimeException("Certificate not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Certificate not found"));
 
         User user = userRepository.findById(certificate.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Course course = courseRepository.findById(certificate.getCourseId())
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         certificate.setStudentName(user.getName());
         certificate.setCourseTitle(course.getTitle());
@@ -99,11 +100,11 @@ public class CertificateService {
 
     public Certificate verifyCertificate(String verificationCode) {
         return certificateRepository.findByVerificationCode(verificationCode)
-                .orElseThrow(() -> new RuntimeException("Certificate not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Certificate not found"));
     }
 
     public Certificate getById(String id) {
         return certificateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Certificate not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Certificate not found"));
     }
 }

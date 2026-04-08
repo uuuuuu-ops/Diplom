@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.diploma.Diplom.dto.CommentRequest;
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.LessonComment;
 import com.diploma.Diplom.model.User;
 import com.diploma.Diplom.repository.UserRepository;
@@ -150,6 +151,6 @@ public class LessonCommentController {
 
     private User getCurrentUser(Principal principal) {
         return userRepository.findByEmail(principal.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }

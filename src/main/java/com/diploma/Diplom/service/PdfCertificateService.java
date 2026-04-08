@@ -2,7 +2,6 @@ package com.diploma.Diplom.service;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import com.diploma.Diplom.exception.InternalServerException;
 import com.diploma.Diplom.model.Certificate;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 
@@ -70,7 +70,7 @@ public class PdfCertificateService {
 
             return "/" + storagePath + "/" + fileName;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to generate certificate PDF", e);
+            throw new InternalServerException("Failed to generate certificate PDF");
         }
     }
 }

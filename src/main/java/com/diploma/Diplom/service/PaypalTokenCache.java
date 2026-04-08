@@ -1,6 +1,12 @@
 package com.diploma.Diplom.service;
 
 import com.diploma.Diplom.config.PaypalProperties;
+import com.diploma.Diplom.exception.PaymentException;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -9,28 +15,40 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class PaypalTokenCache {
 
     private final PaypalProperties paypalProperties;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    private String cachedToken;
-    private Instant tokenExpiresAt = Instant.MIN;
+    private volatile String cachedToken;
+    private volatile Instant tokenExpiresAt = Instant.MIN;
 
-    public PaypalTokenCache(PaypalProperties paypalProperties) {
-        this.paypalProperties = paypalProperties;
-    }
+    private final ReentrantLock lock = new ReentrantLock();
 
     public String getAccessToken() {
         if (cachedToken != null && Instant.now().isBefore(tokenExpiresAt)) {
             return cachedToken;
         }
-        return fetchNewToken();
+
+        lock.lock();
+        try {
+            if (cachedToken != null && Instant.now().isBefore(tokenExpiresAt)) {
+                return cachedToken;
+            }
+            return fetchNewToken();
+        } finally {
+            lock.unlock();
+        }
     }
 
     private String fetchNewToken() {
+        log.debug("Fetching new PayPal access token");
+
         HttpHeaders headers = new HttpHeaders();
         headers.setBasicAuth(paypalProperties.getClientId(), paypalProperties.getClientSecret());
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -40,24 +58,24 @@ public class PaypalTokenCache {
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map> response = restTemplate.exchange(
-                paypalProperties.getBaseUrl() + "/v1/oauth2/token",
-                HttpMethod.POST,
-                entity,
-                Map.class
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+            paypalProperties.getBaseUrl() + "/v1/oauth2/token",
+            HttpMethod.POST,
+            entity,
+            new ParameterizedTypeReference<Map<String, Object>>() {}
         );
 
         Map<String, Object> responseBody = response.getBody();
         if (responseBody == null || responseBody.get("access_token") == null) {
-            throw new RuntimeException("Failed to get PayPal access token");
+            throw new PaymentException("Failed to get PayPal access token");
         }
 
         cachedToken = (String) responseBody.get("access_token");
 
-        // expires_in приходит в секундах, вычитаем 60 сек для запаса
         int expiresIn = (Integer) responseBody.getOrDefault("expires_in", 3600);
         tokenExpiresAt = Instant.now().plusSeconds(expiresIn - 60);
 
+        log.debug("PayPal access token refreshed, expires in {} seconds", expiresIn - 60);
         return cachedToken;
     }
 }

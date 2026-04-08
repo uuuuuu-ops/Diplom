@@ -1,7 +1,6 @@
 package com.diploma.Diplom.model;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.Set;
 
 import org.springframework.data.annotation.Id;

@@ -56,8 +56,6 @@ public class Course {
 
     private String thumbnailPublicId;
 
-    private String resourceType;
-
     @Schema(description = "Average rating 1.0–5.0, recalculated on every new rating", example = "4.3")
     private double avgRating;
  

@@ -1,6 +1,7 @@
 package com.diploma.Diplom.controller;
 
 import com.diploma.Diplom.dto.TeacherApplicationRequest;
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.TeacherApplication;
 import com.diploma.Diplom.model.User;
 import com.diploma.Diplom.repository.UserRepository;
@@ -35,7 +36,6 @@ import java.util.List;
 public class TeacherApplicationController {
 
     private final TeacherApplicationService teacherApplicationService;
-    // FIX: добавлен UserRepository для получения реального _id пользователя
     private final UserRepository userRepository;
 
     public TeacherApplicationController(TeacherApplicationService teacherApplicationService,
@@ -66,7 +66,7 @@ public class TeacherApplicationController {
     ) {
         // FIX: было principal.getName() (email) — теперь берём настоящий MongoDB _id
         User user = userRepository.findByEmail(principal.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         TeacherApplicationRequest request = new TeacherApplicationRequest();
         request.setUserId(user.getId()); // правильный _id, не email
@@ -153,7 +153,7 @@ public class TeacherApplicationController {
         Resource resource = new UrlResource(URI.create(application.getResumeFileUrl()));
 
         if (!resource.exists() || !resource.isReadable()) {
-            throw new RuntimeException("Resume file not found");
+            throw new ResourceNotFoundException("Resume file not found");
         }
 
         return ResponseEntity.ok()

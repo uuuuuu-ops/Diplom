@@ -2,6 +2,10 @@ package com.diploma.Diplom.service;
 
 import com.diploma.Diplom.dto.ResumeAnalysisResult;
 import com.diploma.Diplom.dto.TeacherApplicationRequest;
+import com.diploma.Diplom.exception.BadRequestException;
+import com.diploma.Diplom.exception.ForbiddenException;
+import com.diploma.Diplom.exception.InternalServerException;
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.Role;
 import com.diploma.Diplom.model.TeacherApplication;
 import com.diploma.Diplom.model.User;
@@ -42,23 +46,23 @@ public class TeacherApplicationService {
                 .getName();
 
         User user = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getRole() != Role.TEACHER) {
-            throw new RuntimeException("Only TEACHER users can submit teacher applications");
+            throw new ForbiddenException("Only TEACHER users can submit teacher applications");
         }
 
         if (teacherApplicationRepository.findByUserId(user.getId()).isPresent()) {
-            throw new RuntimeException("Teacher application already exists for this user");
+            throw new BadRequestException("Teacher application already exists for this user");
         }
 
         if (resumeFile == null || resumeFile.isEmpty()) {
-            throw new RuntimeException("Resume PDF file is required");
+            throw new BadRequestException("Resume PDF file is required");
         }
 
         String originalFileName = resumeFile.getOriginalFilename();
         if (originalFileName == null || !originalFileName.toLowerCase().endsWith(".pdf")) {
-            throw new RuntimeException("Only PDF files are allowed");
+            throw new ForbiddenException("Only PDF files are allowed");
         }
 
         try {
@@ -96,7 +100,7 @@ public class TeacherApplicationService {
             return teacherApplicationRepository.save(application);
 
         } catch (IOException e) {
-            throw new RuntimeException("Failed to upload/process PDF: " + e.getMessage(), e);
+            throw new InternalServerException("Failed to upload/process PDF: " + e.getMessage());
         }
     }
 
@@ -117,10 +121,10 @@ public class TeacherApplicationService {
 
     public TeacherApplication approveApplication(String applicationId, String reviewComment) {
         TeacherApplication application = teacherApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Teacher application not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher application not found"));
 
         User user = userRepository.findById(application.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         application.setStatus("APPROVED");
         application.setReviewComment(reviewComment);
@@ -134,10 +138,10 @@ public class TeacherApplicationService {
 
     public TeacherApplication rejectApplication(String applicationId, String reviewComment) {
         TeacherApplication application = teacherApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Teacher application not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher application not found"));
 
         User user = userRepository.findById(application.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         application.setStatus("REJECTED");
         application.setReviewComment(reviewComment);
@@ -150,18 +154,18 @@ public class TeacherApplicationService {
 
     public TeacherApplication getApplicationById(String applicationId) {
         return teacherApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Teacher application not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher application not found"));
     }
 
     public TeacherApplication getMyApplication(String teacherEmail) {
         User user = userRepository.findByEmail(teacherEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getRole() != Role.TEACHER) {
-            throw new RuntimeException("Only teachers can view teacher application status");
+            throw new ForbiddenException("Only teachers can view teacher application status");
         }
 
         return teacherApplicationRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new RuntimeException("Application not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
     }
 }

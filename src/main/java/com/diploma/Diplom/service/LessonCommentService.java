@@ -6,6 +6,9 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.diploma.Diplom.dto.CommentRequest;
+import com.diploma.Diplom.exception.BadRequestException;
+import com.diploma.Diplom.exception.ForbiddenException;
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.Lesson;
 import com.diploma.Diplom.model.LessonComment;
 import com.diploma.Diplom.model.Role;
@@ -31,21 +34,21 @@ public class LessonCommentService {
 
     public LessonComment addComment(String authorId, String lessonId, CommentRequest request) {
         if (request.getContent() == null || request.getContent().isBlank()) {
-            throw new RuntimeException("Comment content cannot be empty");
+            throw new BadRequestException("Comment content cannot be empty");
         }
 
         Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
         if (request.getParentId() != null) {
             LessonComment parent = commentRepository.findById(request.getParentId())
-                    .orElseThrow(() -> new RuntimeException("Parent comment not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Parent comment not found"));
             if (!parent.getLessonId().equals(lessonId)) {
-                throw new RuntimeException("Parent comment does not belong to this lesson");
+                throw new BadRequestException("Parent comment does not belong to this lesson");
             }
             // no nested replies — only one level of threading
             if (parent.getParentId() != null) {
-                throw new RuntimeException("Cannot reply to a reply");
+                throw new BadRequestException("Cannot reply to a reply");
             }
         }
 
@@ -72,13 +75,13 @@ public class LessonCommentService {
     }
     public LessonComment markAsAnswer(String teacherEmail, String commentId) {
         User teacher = userRepository.findByEmail(teacherEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         LessonComment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("Comment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
 
         if (teacher.getRole() != Role.TEACHER) {
-            throw new RuntimeException("Only teachers can mark answers");
+            throw new ForbiddenException("Only teachers can mark answers");
         }
 
         comment.setMarkedAsAnswer(true);
@@ -89,16 +92,16 @@ public class LessonCommentService {
 
     public void deleteComment(String userId, String commentId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         LessonComment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("Comment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
 
         boolean isAuthor = comment.getAuthorId().equals(userId);
         boolean isTeacher = user.getRole() == Role.TEACHER;
 
         if (!isAuthor && !isTeacher) {
-            throw new RuntimeException("You do not have permission to delete this comment");
+            throw new ForbiddenException("You do not have permission to delete this comment");
         }
 
         if (comment.getParentId() == null) {

@@ -2,6 +2,7 @@ package com.diploma.Diplom.service;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.diploma.Diplom.exception.InternalServerException;
 
 import lombok.Data;
 
@@ -20,6 +21,7 @@ public class CloudinaryService {
         this.cloudinary = cloudinary;
     }
 
+    @SuppressWarnings("rawtypes")
     public FileUploadResult uploadFile(MultipartFile file, String folder) {
         try {
             Map uploadResult = cloudinary.uploader().upload(
@@ -38,7 +40,7 @@ public class CloudinaryService {
             return result;
 
         } catch (IOException e) {
-            throw new RuntimeException("Cloudinary upload failed: " + e.getMessage(), e);
+            throw new InternalServerException("Cloudinary upload failed: " + e.getMessage());
         }
     }
 
@@ -51,7 +53,7 @@ public class CloudinaryService {
         cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "video"));
         cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "raw"));
     } catch (IOException e) {
-        throw new RuntimeException("Cloudinary delete failed: " + e.getMessage(), e);
+        throw new InternalServerException("Cloudinary delete failed: " + e.getMessage());
     }
 }
 

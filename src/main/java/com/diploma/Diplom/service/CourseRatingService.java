@@ -6,6 +6,9 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.diploma.Diplom.dto.RatingRequest;
+import com.diploma.Diplom.exception.BadRequestException;
+import com.diploma.Diplom.exception.ForbiddenException;
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.Course;
 import com.diploma.Diplom.model.CourseProgress;
 import com.diploma.Diplom.model.CourseRating;
@@ -31,16 +34,16 @@ public class CourseRatingService {
     
     public CourseRating rateOrUpdate(String userId, String courseId, RatingRequest request) {
         if (request.getRating() < 1 || request.getRating() > 5) {
-            throw new RuntimeException("Rating must be between 1 and 5");
+            throw new BadRequestException("Rating must be between 1 and 5");
         }
 
         CourseProgress progress = progressRepository
                 .findByUserIdAndCourseId(userId, courseId)
-                .orElseThrow(() -> new RuntimeException(
+                .orElseThrow(() -> new ForbiddenException(
                         "You must be enrolled and have started this course to rate it"));
 
         if (progress.getCompletedLessonIds().isEmpty()) {
-            throw new RuntimeException(
+            throw new ForbiddenException(
                     "Complete at least one lesson before leaving a rating");
         }
 
@@ -70,7 +73,7 @@ public class CourseRatingService {
     public void deleteRating(String userId, String courseId) {
         CourseRating rating = ratingRepository
                 .findByUserIdAndCourseId(userId, courseId)
-                .orElseThrow(() -> new RuntimeException("Rating not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Rating not found"));
         ratingRepository.delete(rating);
         recalcCourseAverage(courseId);
     }
@@ -79,7 +82,7 @@ public class CourseRatingService {
     private void recalcCourseAverage(String courseId) {
         List<CourseRating> all = ratingRepository.findByCourseId(courseId);
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         if (all.isEmpty()) {
             course.setAvgRating(0.0);

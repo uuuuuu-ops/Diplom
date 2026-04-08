@@ -1,9 +1,11 @@
 package com.diploma.Diplom.service;
 
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.Payment;
 import com.diploma.Diplom.model.PaymentStatus;
 import com.diploma.Diplom.model.PaymentType;
 import com.diploma.Diplom.repository.PaymentRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -11,13 +13,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class PaymentService {
 
-    private final PaymentRepository paymentRepository;
+    private static final String PROVIDER_PAYPAL = "PAYPAL";
 
-    public PaymentService(PaymentRepository paymentRepository) {
-        this.paymentRepository = paymentRepository;
-    }
+    private final PaymentRepository paymentRepository;
 
     public Payment createCoursePayment(String userId,
                                        String courseId,
@@ -32,7 +33,7 @@ public class PaymentService {
         payment.setStatus(PaymentStatus.CREATED);
         payment.setAmount(amount);
         payment.setCurrency(currency);
-        payment.setProvider("PAYPAL");
+        payment.setProvider(PROVIDER_PAYPAL);
         payment.setPaypalOrderId(paypalOrderId);
         payment.setApprovalUrl(approvalUrl);
         payment.setCreatedAt(LocalDateTime.now());
@@ -58,10 +59,11 @@ public class PaymentService {
 
     public Payment getByOrderId(String orderId) {
         return paymentRepository.findByPaypalOrderId(orderId)
-                .orElseThrow(() -> new RuntimeException("Payment not found: " + orderId));
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found: " + orderId));
     }
 
     public List<Payment> getPaymentsByUser(String userId) {
         return paymentRepository.findByUserId(userId);
     }
 }
+ 

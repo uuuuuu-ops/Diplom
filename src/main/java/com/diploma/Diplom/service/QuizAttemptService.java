@@ -6,6 +6,9 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.diploma.Diplom.dto.SubmitQuizRequest;
+import com.diploma.Diplom.exception.BadRequestException;
+import com.diploma.Diplom.exception.ForbiddenException;
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.Lesson;
 import com.diploma.Diplom.model.Quiz;
 import com.diploma.Diplom.model.QuizAttempt;
@@ -38,30 +41,30 @@ public class QuizAttemptService {
                                   LocalDateTime startedAt) {
 
         Quiz quiz = quizRepository.findById(request.getQuizId())
-                .orElseThrow(() -> new RuntimeException("Quiz not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Quiz not found"));
 
         if (!quiz.isPublished()) {
-            throw new RuntimeException("This quiz is not published yet");
+            throw new ForbiddenException("This quiz is not published yet");
         }
 
         if (quiz.getTimeLimitSeconds() != null && startedAt != null) {
             long elapsedSeconds = java.time.Duration.between(startedAt, LocalDateTime.now())
                     .getSeconds();
             if (elapsedSeconds > quiz.getTimeLimitSeconds() + 10) {
-                throw new RuntimeException(
+                throw new BadRequestException(
                         "Time limit exceeded. Your answers were not recorded.");
             }
         }
 
         Lesson lesson = lessonRepository.findById(quiz.getLessonId())
-                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
         // ── Grade answers ──────────────────────────────────────────────────
         List<QuizQuestion> questions = quiz.getQuestions();
         List<Integer> answers = request.getAnswers();
 
         if (answers == null || answers.size() != questions.size()) {
-            throw new RuntimeException(
+            throw new BadRequestException(
                     "Answer count does not match question count. Expected "
                     + questions.size() + " answers.");
         }

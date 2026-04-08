@@ -2,15 +2,16 @@ package com.diploma.Diplom.service;
 
 import com.diploma.Diplom.config.PaypalProperties;
 import com.diploma.Diplom.dto.CreatePaypalOrderResponse;
-import com.diploma.Diplom.exception.AccessDeniedException;
 import com.diploma.Diplom.exception.PaymentException;
 import com.diploma.Diplom.exception.ResourceNotFoundException;
+import com.diploma.Diplom.exception.UnauthorizedException;
 import com.diploma.Diplom.model.*;
 import com.diploma.Diplom.repository.CourseRepository;
 import com.diploma.Diplom.util.SecurityUtils;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -77,13 +78,12 @@ public class PaypalService {
         headers.setBearerAuth(accessToken);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        ResponseEntity<Map> response = restTemplate.exchange(
-                paypalProperties.getBaseUrl() + "/v2/checkout/orders",
-                HttpMethod.POST,
-                new HttpEntity<>(body, headers),
-                Map.class
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+            paypalProperties.getBaseUrl() + "/v2/checkout/orders",
+            HttpMethod.POST,
+            new HttpEntity<>(body, headers),
+            new ParameterizedTypeReference<Map<String, Object>>() {}
         );
-
         Map<String, Object> responseBody = response.getBody();
         if (responseBody == null) {
             throw new PaymentException("Empty response from PayPal");
@@ -106,7 +106,7 @@ public class PaypalService {
         Payment payment = paymentService.getByOrderId(orderId);
 
         if (!payment.getUserId().equals(userId)) {
-            throw new AccessDeniedException("You do not have access to this payment");
+            throw new    UnauthorizedException("You do not have access to this payment");
         }
 
         if (payment.getStatus() == PaymentStatus.CAPTURED) {
@@ -123,11 +123,11 @@ public class PaypalService {
         headers.setBearerAuth(accessToken);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        ResponseEntity<Map> response = restTemplate.exchange(
-                paypalProperties.getBaseUrl() + "/v2/checkout/orders/" + orderId + "/capture",
-                HttpMethod.POST,
-                new HttpEntity<>("{}", headers),
-                Map.class
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+            paypalProperties.getBaseUrl() + "/v2/checkout/orders/" + orderId + "/capture",
+            HttpMethod.POST,
+            new HttpEntity<>("{}", headers),
+            new ParameterizedTypeReference<Map<String, Object>>() {}
         );
 
         Map<String, Object> responseBody = response.getBody();

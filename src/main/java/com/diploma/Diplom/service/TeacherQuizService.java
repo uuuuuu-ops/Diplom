@@ -1,5 +1,8 @@
 package com.diploma.Diplom.service;
 
+import com.diploma.Diplom.exception.BadRequestException;
+import com.diploma.Diplom.exception.ForbiddenException;
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.*;
 import com.diploma.Diplom.repository.*;
 import org.springframework.stereotype.Service;
@@ -24,7 +27,7 @@ public class TeacherQuizService {
 
     public List<TeacherQuizQuestion> getQuestions(String applicationId) {
         TeacherApplication app = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
 
         String topic = app.getSpecialization();
         List<TeacherQuizQuestion> questions = questionRepository.findByTopicIgnoreCase(topic);
@@ -44,14 +47,14 @@ public class TeacherQuizService {
                                          Map<String, Integer> answers) {
 
         TeacherApplication app = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
 
         if (!app.getUserId().equals(userId)) {
-            throw new RuntimeException("Not your application");
+            throw new ForbiddenException("Not your application");
         }
 
         if (attemptRepository.findByApplicationId(applicationId).isPresent()) {
-            throw new RuntimeException("Quiz already submitted");
+            throw new BadRequestException("Quiz already submitted");
         }
 
         List<TeacherQuizAttempt.QuizAnswer> quizAnswers = new ArrayList<>();
@@ -59,7 +62,7 @@ public class TeacherQuizService {
 
         for (Map.Entry<String, Integer> entry : answers.entrySet()) {
             TeacherQuizQuestion question = questionRepository.findById(entry.getKey())
-                    .orElseThrow(() -> new RuntimeException("Question not found: " + entry.getKey()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Question not found: " + entry.getKey()));
 
             boolean isCorrect = question.getCorrectIndex() == entry.getValue();
             if (isCorrect) correct++;
@@ -96,6 +99,6 @@ public class TeacherQuizService {
 
     public TeacherQuizAttempt getMyAttempt(String applicationId) {
         return attemptRepository.findByApplicationId(applicationId)
-                .orElseThrow(() -> new RuntimeException("Quiz not taken yet"));
+                .orElseThrow(() -> new ResourceNotFoundException("Quiz not taken yet"));
     }
 }

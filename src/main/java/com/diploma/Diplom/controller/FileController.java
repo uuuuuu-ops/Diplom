@@ -9,6 +9,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.diploma.Diplom.exception.BadRequestException;
+import com.diploma.Diplom.exception.InternalServerException;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -85,23 +88,23 @@ public class FileController {
     @GetMapping
     public ResponseEntity<Resource> getFile(@RequestParam("path") String filePath) {
         try {
-            // FIX: добавлена проверка расширения файла — запрет на .java, .class, .properties и т.д.
+            
             String lower = filePath.toLowerCase();
             if (!isAllowedExtension(lower)) {
-                throw new RuntimeException("File type not allowed");
+                throw new BadRequestException("File type not allowed");
             }
 
             Path rootPath = Paths.get(uploadRootDir).toAbsolutePath().normalize();
             Path resolvedPath = rootPath.resolve(filePath.replace("\\", "/")).normalize();
 
             if (!resolvedPath.startsWith(rootPath)) {
-                throw new RuntimeException("Invalid file path");
+                throw new BadRequestException("Invalid file path");
             }
 
             Resource resource = new UrlResource(resolvedPath.toUri());
 
             if (!resource.exists() || !resource.isReadable()) {
-                throw new RuntimeException("File not found");
+                throw new BadRequestException("File not found");
             }
 
             String contentType = detectContentType(resolvedPath);
@@ -120,7 +123,7 @@ public class FileController {
                     .body(resource);
 
         } catch (MalformedURLException e) {
-            throw new RuntimeException("Failed to read file: " + e.getMessage(), e);
+            throw new InternalServerException("Failed to read file: " + e.getMessage());
         }
     }
 

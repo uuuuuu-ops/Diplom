@@ -18,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.diploma.Diplom.dto.SubmitQuizRequest;
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.QuizAttempt;
 import com.diploma.Diplom.model.User;
 import com.diploma.Diplom.repository.UserRepository;
@@ -97,6 +98,6 @@ public class QuizAttemptController {
 
     private User getCurrentUser(Authentication authentication) {
         return userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }
