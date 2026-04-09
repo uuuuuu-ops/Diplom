@@ -7,8 +7,10 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class CreatePaypalOrderResponse {
+   
     @Schema(description = "The unique identifier for the created PayPal order")
     private String orderId;
+
     @Schema(description = "The URL to approve the created PayPal order")
     private String approvalUrl;
 }

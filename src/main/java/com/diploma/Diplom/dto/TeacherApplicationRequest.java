@@ -9,6 +9,7 @@ import lombok.Data;
 @Schema(description = "A request to apply for a teacher position, including personal information and qualifications")
 @Data
 public class TeacherApplicationRequest {
+    
     @Schema(description = "The ID of the user applying for the teacher position")
     @NotBlank(message = "UserId is required")
     private String userId;

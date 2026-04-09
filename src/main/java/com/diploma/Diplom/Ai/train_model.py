@@ -33,9 +33,7 @@ df["label"] = df["AI Score (0-100)"].apply(score_to_label)
 print("\nРаспределение меток:")
 print(df["label"].value_counts())
 
-# ── 3. Feature Engineering ────────────────────────────────────────────────────
 
-# Образование → числовой ранг
 edu_rank = {"B.Sc": 1, "B.Tech": 2, "MBA": 3, "M.Tech": 4, "PhD": 5}
 df["edu_rank"] = df["Education"].map(edu_rank).fillna(0)
 

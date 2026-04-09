@@ -10,7 +10,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "paypal")
 public class PaypalProperties {
+
     private String clientId;
+
     private String clientSecret;
+    
     private String baseUrl;
 }

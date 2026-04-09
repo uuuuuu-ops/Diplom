@@ -449,6 +449,107 @@ API_KEY=your_secret_api_key_here
 
 ---
 
+# Тесты для Diplom Backend
+
+## Структура файлов
+
+Поместите тестовые файлы в:
+```
+src/test/java/com/diploma/Diplom/
+├── auth/
+│   └── AuthServiceTest.java
+└── service/
+    ├── CourseServiceTest.java
+    └── EnrollmentAndQuizServiceTest.java  
+```
+
+## Зависимости в pom.xml
+
+Убедитесь, что в вашем `pom.xml` есть:
+
+```xml
+<dependencies>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+
+</dependencies>
+```
+
+`spring-boot-starter-test` уже включает в себя:
+- **JUnit 5** — фреймворк тестирования
+- **Mockito** — мокирование зависимостей
+- **AssertJ** — удобные assertion'ы (`assertThat(...)`)
+
+## Запуск тестов
+
+```bash
+mvn test
+
+mvn test -Dtest=CourseServiceTest
+
+mvn test -Dtest=CourseServiceTest#createCourse_paidWithoutPrice_throws
+```
+
+## Что тестируется
+
+### AuthServiceTest (11 тестов)
+| Метод       | Тест-кейс                                             |
+|-------------|-------------------------------------------------------|
+| `register`  | Успешная регистрация                                  |
+| `register`  | Email уже занят → ConflictException                   |
+| `register`  | Ошибка отправки email → откат + InternalServerException |
+| `verify`    | Верный код → аккаунт включается                       |
+| `verify`    | Неверный код → UnauthorizedException                  |
+| `verify`    | Просроченный код → UnauthorizedException              |
+| `login`     | Успешный вход → токен + данные пользователя           |
+| `login`     | Аккаунт не подтверждён → ForbiddenException           |
+| `login`     | Неверный пароль → BadRequestException                 |
+| `login`     | Пользователь не найден → ResourceNotFoundException    |
+
+### CourseServiceTest (12 тестов)
+| Метод             | Тест-кейс                                         |
+|-------------------|---------------------------------------------------|
+| `createCourse`    | Платный курс с ценой                              |
+| `createCourse`    | Бесплатный курс → цена = 0                        |
+| `createCourse`    | Платный без цены → BadRequestException            |
+| `createCourse`    | Студент создаёт курс → ForbiddenException         |
+| `createCourse`    | Неподтверждённый учитель → ForbiddenException     |
+| `createCourse`    | С файлом превью → загрузка в Cloudinary           |
+| `updateCourse`    | Успешное обновление полей                         |
+| `updateCourse`    | Чужой курс → ForbiddenException                  |
+| `updateCourse`    | Курс не найден → ResourceNotFoundException        |
+| `deleteCourse`    | Удаляет курс + уроки                             |
+| `deleteCourse`    | С превью → удаляет из Cloudinary                 |
+| `getPublicCourses`| Возвращает только опубликованные                 |
+
+### EnrollmentServiceTest (6 тестов)
+| Метод               | Тест-кейс                                       |
+|---------------------|-------------------------------------------------|
+| `hasAccess`         | Бесплатный курс → всегда true                   |
+| `hasAccess`         | Есть активная запись → true                     |
+| `hasAccess`         | Есть подписка → true                            |
+| `hasAccess`         | Нет ни записи, ни подписки → false              |
+| `enrollFreeCourse`  | Успешная запись                                 |
+| `enrollFreeCourse`  | Уже записан → возвращает существующую запись    |
+| `enrollFreeCourse`  | Платный курс → ForbiddenException               |
+
+### QuizServiceTest (8 тестов)
+| Метод         | Тест-кейс                                            |
+|---------------|------------------------------------------------------|
+| `createQuiz`  | Успешное создание                                    |
+| `createQuiz`  | Квиз уже существует → BadRequestException            |
+| `createQuiz`  | Пустой список вопросов → BadRequestException         |
+| `createQuiz`  | Неверный индекс ответа → BadRequestException         |
+| `createQuiz`  | Один вариант ответа → BadRequestException            |
+| `createQuiz`  | Чужой курс → ForbiddenException                     |
+| `createQuiz`  | passingScore по умолчанию = 60                      |
+| `deleteQuiz`  | Успешное удаление                                    |
+| `deleteQuiz`  | Квиз не найден → ResourceNotFoundException           |
+
 ## TODO — Будущая работа
 
 # Frontend (React / Next.js)

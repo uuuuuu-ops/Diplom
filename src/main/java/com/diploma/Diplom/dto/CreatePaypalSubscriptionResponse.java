@@ -7,6 +7,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class CreatePaypalSubscriptionResponse {
+   
     @Schema(description = "The unique identifier for the created PayPal subscription")
     private String subscriptionId;
 }

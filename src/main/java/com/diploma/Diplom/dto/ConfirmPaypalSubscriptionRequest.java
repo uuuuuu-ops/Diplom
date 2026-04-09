@@ -7,6 +7,7 @@ import lombok.Data;
 @Schema(description = "Request to confirm a PayPal subscription")
 @Data
 public class ConfirmPaypalSubscriptionRequest {
+    
     @Schema(description = "The ID of the subscription to confirm")
     @NotBlank(message = "Subscription ID is required")
     private String subscriptionId;

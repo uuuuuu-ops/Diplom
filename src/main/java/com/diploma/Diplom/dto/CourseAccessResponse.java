@@ -7,6 +7,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class CourseAccessResponse {
+    
     @Schema(description = "Indicates whether the user has access to the course")
     private boolean hasAccess;
 }

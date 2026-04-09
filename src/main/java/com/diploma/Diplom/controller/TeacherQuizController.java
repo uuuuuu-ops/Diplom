@@ -4,6 +4,7 @@ import com.diploma.Diplom.model.TeacherQuizAttempt;
 import com.diploma.Diplom.model.TeacherQuizQuestion;
 import com.diploma.Diplom.service.TeacherQuizService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -41,6 +42,7 @@ public class TeacherQuizController {
                 content = @Content)
         }
     )
+    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/{applicationId}/questions")
     public ResponseEntity<List<TeacherQuizQuestion>> getQuestions(
             @Parameter(description = "Teacher application ID") @PathVariable String applicationId) {
@@ -74,6 +76,7 @@ public class TeacherQuizController {
                 content = @Content)
         }
     )
+    @PreAuthorize("hasRole('TEACHER')")
     @PostMapping("/{applicationId}/submit")
     public ResponseEntity<TeacherQuizAttempt> submitQuiz(
             @Parameter(description = "Teacher application ID") @PathVariable String applicationId,
@@ -95,6 +98,7 @@ public class TeacherQuizController {
                 content = @Content)
         }
     )
+    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/{applicationId}/result")
     public ResponseEntity<TeacherQuizAttempt> getResult(
             @Parameter(description = "Teacher application ID") @PathVariable String applicationId) {

@@ -15,12 +15,16 @@ public class QuizAttempt {
     @Schema(description = "MongoDB ObjectId")
     @Id
     private String id;
+
     @Schema(description = "ID of the student who took the quiz")
     private String userId;
+
     @Schema(description = "ID of the quiz that was taken")
     private String quizId;
+
     @Schema(description = "ID of the lesson the quiz belongs to")
     private String lessonId;
+
     @Schema(description = "ID of the course the lesson belongs to")
     private String courseId;
 
@@ -32,6 +36,7 @@ public class QuizAttempt {
 
    @Schema(description = "Total number of questions in the quiz")
     private int totalQuestions;
+    
     @Schema(description = "Number of correct answers given by the student")
     private int correctAnswers;
     
