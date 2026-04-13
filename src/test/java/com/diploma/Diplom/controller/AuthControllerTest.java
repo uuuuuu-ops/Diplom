@@ -47,7 +47,6 @@ class AuthControllerTest {
         req.setName("Alice");
         req.setEmail("alice@test.com");
         req.setPassword("securePass1");
-        req.setRole("STUDENT");
 
         AuthResponse response = new AuthResponse();
         response.setMessage("Verification code sent to alice@test.com");
@@ -122,7 +121,6 @@ class AuthControllerTest {
         AuthResponse response = new AuthResponse();
         response.setToken("jwt-token-abc");
         response.setEmail("alice@test.com");
-        response.setRole("STUDENT");
 
         when(authService.login(any(AuthRequest.class))).thenReturn(response);
 

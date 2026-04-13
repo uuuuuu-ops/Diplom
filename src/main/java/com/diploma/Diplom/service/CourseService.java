@@ -33,10 +33,10 @@ public class CourseService {
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
 
-    public Course createCourse(String teacherEmail,
+    public Course createCourse(String userId,
                                CreateCourseRequest request,
                                MultipartFile thumbnailFile) {
-        User user = getApprovedTeacher(teacherEmail);
+        User user = getApprovedTeacher(userId);
 
         Course course = new Course();
         course.setTeacherId(user.getId());
@@ -131,19 +131,20 @@ public class CourseService {
         return courseRepository.findByPublishedTrue();
     }
 
-    private User getApprovedTeacher(String teacherEmail) {
-        User user = userRepository.findByEmail(teacherEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + teacherEmail));
+    private User getApprovedTeacher(String userId) {
+    User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 
-        if (user.getRole() != Role.TEACHER) {
-            throw new ForbiddenException("Only teachers can manage courses");
-        }
-        if (!user.isTeacherApproved()) {
-            throw new ForbiddenException("Only approved teachers can manage courses");
-        }
-
-        return user;
+    if (user.getRole() != Role.TEACHER) {
+        throw new ForbiddenException("Only teachers can manage courses");
     }
+
+    if (!user.isTeacherApproved()) {
+        throw new ForbiddenException("Only approved teachers can manage courses");
+    }
+
+    return user;
+}
 
     private void validateCourseOwnership(User user, Course course) {
         if (!course.getTeacherId().equals(user.getId())) {

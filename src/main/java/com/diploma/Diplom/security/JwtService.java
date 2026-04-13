@@ -27,12 +27,23 @@ public class JwtService {
 
     public String generateToken(User user) {
         return Jwts.builder()
-                .setSubject(user.getEmail())
+                .setSubject(user.getId())
+                .claim("email", user.getEmail())
                 .claim("role", "ROLE_" + user.getRole().name())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public String extractUserId(String token) {
+    Claims claims = Jwts.parserBuilder()
+            .setSigningKey(getSignInKey())
+            .build()
+            .parseClaimsJws(token)
+            .getBody();
+
+    return claims.getSubject(); 
     }
 
     public boolean validateToken(String token) {

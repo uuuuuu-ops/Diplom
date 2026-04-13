@@ -1,7 +1,6 @@
 package com.diploma.Diplom.auth;
 
 import com.diploma.Diplom.exception.*;
-import com.diploma.Diplom.model.Role;
 import com.diploma.Diplom.model.User;
 import com.diploma.Diplom.model.VerificationCode;
 import com.diploma.Diplom.repository.UserRepository;
@@ -38,7 +37,7 @@ public class AuthService {
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(Role.STUDENT);
+        user.setRole(request.getRole());
         user.setEnabled(false);
 
         userRepository.save(user);
@@ -102,7 +101,7 @@ public class AuthService {
 
         return new AuthResponse(
                 token,
-                user.getRole().name(),
+                user.getRole(),
                 user.isTeacherApproved(),
                 user.getEmail(),
                 user.getName()

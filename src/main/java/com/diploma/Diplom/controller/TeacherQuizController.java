@@ -6,7 +6,6 @@ import com.diploma.Diplom.service.TeacherQuizService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +20,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/teacher/quiz")
+@RequestMapping("/teacher-applications")
 @Tag(name = "Teacher Quiz", description = "Quiz flow for teacher applications")
 @SecurityRequirement(name = "bearerAuth")
 public class TeacherQuizController {
@@ -80,11 +79,11 @@ public class TeacherQuizController {
     @PostMapping("/{applicationId}/submit")
     public ResponseEntity<TeacherQuizAttempt> submitQuiz(
             @Parameter(description = "Teacher application ID") @PathVariable String applicationId,
-            @AuthenticationPrincipal UserDetails userDetails,
+            @AuthenticationPrincipal String userId,
             @RequestBody Map<String, Integer> answers) {
 
         return ResponseEntity.ok(
-            quizService.submitQuiz(userDetails.getUsername(), applicationId, answers)
+            quizService.submitQuiz(userId , applicationId, answers)
         );
     }
 

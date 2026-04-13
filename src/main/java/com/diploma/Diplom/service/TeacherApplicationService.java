@@ -157,8 +157,8 @@ public class TeacherApplicationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Teacher application not found"));
     }
 
-    public TeacherApplication getMyApplication(String teacherEmail) {
-        User user = userRepository.findByEmail(teacherEmail)
+    public TeacherApplication getMyApplication(String userId) {
+        User user = userRepository.findByEmail(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getRole() != Role.TEACHER) {

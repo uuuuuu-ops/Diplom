@@ -2,6 +2,7 @@ package com.diploma.Diplom.service;
 
 import com.diploma.Diplom.config.PaypalProperties;
 import com.diploma.Diplom.dto.CreatePaypalOrderResponse;
+import com.diploma.Diplom.exception.ConflictException;
 import com.diploma.Diplom.exception.PaymentException;
 import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.exception.UnauthorizedException;
@@ -57,7 +58,7 @@ public class PaypalService {
         }
 
         if (enrollmentService.hasAccess(userId, courseId)) {
-            throw new IllegalStateException("You already have access to this course");
+            throw new ConflictException("You already have access to this course");
         }
 
         String accessToken = tokenCache.getAccessToken();

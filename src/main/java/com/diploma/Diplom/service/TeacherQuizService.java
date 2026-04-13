@@ -32,70 +32,69 @@ public class TeacherQuizService {
         String topic = app.getSpecialization();
         List<TeacherQuizQuestion> questions = questionRepository.findByTopicIgnoreCase(topic);
 
-        // Если нет вопросов по точной теме — берём общие (General)
         if (questions.isEmpty()) {
             questions = questionRepository.findByTopicIgnoreCase("General");
         }
 
-        // Перемешиваем и берём 5
         Collections.shuffle(questions);
         return questions.stream().limit(5).collect(Collectors.toList());
     }
 
-    public TeacherQuizAttempt submitQuiz(String userId,
-                                         String applicationId,
-                                         Map<String, Integer> answers) {
+public TeacherQuizAttempt submitQuiz(String userId,
+                                     String applicationId,
+                                     Map<String, Integer> answers) {
 
-        TeacherApplication app = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+    TeacherApplication app = applicationRepository.findById(applicationId)
+            .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
 
-        if (!app.getUserId().equals(userId)) {
-            throw new ForbiddenException("Not your application");
-        }
-
-        if (attemptRepository.findByApplicationId(applicationId).isPresent()) {
-            throw new BadRequestException("Quiz already submitted");
-        }
-
-        List<TeacherQuizAttempt.QuizAnswer> quizAnswers = new ArrayList<>();
-        int correct = 0;
-
-        for (Map.Entry<String, Integer> entry : answers.entrySet()) {
-            TeacherQuizQuestion question = questionRepository.findById(entry.getKey())
-                    .orElseThrow(() -> new ResourceNotFoundException("Question not found: " + entry.getKey()));
-
-            boolean isCorrect = question.getCorrectIndex() == entry.getValue();
-            if (isCorrect) correct++;
-
-            TeacherQuizAttempt.QuizAnswer ans = new TeacherQuizAttempt.QuizAnswer();
-            ans.setQuestionId(entry.getKey());
-            ans.setSelectedIndex(entry.getValue());
-            ans.setCorrect(isCorrect);
-            quizAnswers.add(ans);
-        }
-
-        int score = (correct * 100) / Math.max(answers.size(), 1);
-        boolean passed = score >= 60;
-
-        // Сохраняем попытку
-        TeacherQuizAttempt attempt = new TeacherQuizAttempt();
-        attempt.setUserId(userId);
-        attempt.setApplicationId(applicationId);
-        attempt.setTopic(app.getSpecialization());
-        attempt.setAnswers(quizAnswers);
-        attempt.setScore(score);
-        attempt.setPassed(passed);
-        attempt.setTakenAt(LocalDateTime.now());
-        attemptRepository.save(attempt);
-
-        // Обновляем заявку
-        app.setQuizScore(score);
-        app.setQuizPassed(passed);
-        app.setQuizAttemptId(attempt.getId());
-        applicationRepository.save(app);
-
-        return attempt;
+    // 🔥 FIX HERE
+    if (!app.getUserId().equals(userId)) {
+        throw new ForbiddenException("Not your application");
     }
+
+    if (attemptRepository.findByApplicationId(applicationId).isPresent()) {
+        throw new BadRequestException("Quiz already submitted");
+    }
+
+    List<TeacherQuizAttempt.QuizAnswer> quizAnswers = new ArrayList<>();
+    int correct = 0;
+
+    for (Map.Entry<String, Integer> entry : answers.entrySet()) {
+
+        TeacherQuizQuestion question = questionRepository.findById(entry.getKey())
+                .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
+
+        boolean isCorrect = question.getCorrectIndex() == entry.getValue();
+        if (isCorrect) correct++;
+
+        TeacherQuizAttempt.QuizAnswer ans = new TeacherQuizAttempt.QuizAnswer();
+        ans.setQuestionId(entry.getKey());
+        ans.setSelectedIndex(entry.getValue());
+        ans.setCorrect(isCorrect);
+
+        quizAnswers.add(ans);
+    }
+
+    int score = (correct * 100) / Math.max(answers.size(), 1);
+    boolean passed = score >= 60;
+
+    TeacherQuizAttempt attempt = new TeacherQuizAttempt();
+    attempt.setUserId(userId);
+    attempt.setApplicationId(applicationId);
+    attempt.setAnswers(quizAnswers);
+    attempt.setScore(score);
+    attempt.setPassed(passed);
+    attempt.setTakenAt(LocalDateTime.now());
+
+    attemptRepository.save(attempt);
+
+    app.setQuizScore(score);
+    app.setQuizPassed(passed);
+    app.setQuizAttemptId(attempt.getId());
+    applicationRepository.save(app);
+
+    return attempt;
+}
 
     public TeacherQuizAttempt getMyAttempt(String applicationId) {
         return attemptRepository.findByApplicationId(applicationId)

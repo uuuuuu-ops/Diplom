@@ -1,13 +1,11 @@
 package com.diploma.Diplom.controller;
 
 import com.diploma.Diplom.dto.ConfirmPaypalSubscriptionRequest;
-import com.diploma.Diplom.dto.SavePendingSubscriptionRequest;
 import com.diploma.Diplom.model.Subscription;
 import com.diploma.Diplom.service.PaypalSubscriptionService;
 import com.diploma.Diplom.service.SubscriptionService;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,10 +20,9 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/subscriptions/paypal")
-@Tag(name = "Enrollments & Payments", description = "Enroll in courses and manage payments")
+@Tag(name = "Enrollments & Payments", description = "Manage PayPal subscriptions for course enrollment")
 @SecurityRequirement(name = "bearerAuth")
 public class SubscriptionController {
-
     private final PaypalSubscriptionService paypalSubscriptionService;
     private final SubscriptionService subscriptionService;
 
@@ -36,13 +33,14 @@ public class SubscriptionController {
     }
 
     @Operation(
-        summary = "Get the PayPal subscription plan ID",
-        description = """
-            Returns the configured PayPal plan ID that the frontend passes to
-            the PayPal JS SDK when rendering the subscription button.
-            """,
-        responses = @ApiResponse(responseCode = "200",
-            content = @Content(schema = @Schema(example = "{\"planId\": \"P-58N535868G1027601NHFZDXQ\"}")))
+            summary = "Get PayPal plan ID",
+            description = "Returns PayPal plan ID configured in backend. Used for subscription creation.",
+            responses = @ApiResponse(
+                    responseCode = "200",
+                    content = @Content(
+                            schema = @Schema(example = "{\"planId\": \"P-58N535868G1027601NHFZDXQ\"}")
+                    )
+            )
     )
     @GetMapping("/plan")
     public Map<String, String> getPlan() {
@@ -50,19 +48,58 @@ public class SubscriptionController {
     }
 
     @Operation(
-        summary = "Confirm an active PayPal subscription",
-        description = """
-            Call this after PayPal redirects back to your app with a `subscription_id`.
-            Verifies the subscription with PayPal and activates it in the database.
+            summary = "Create PayPal subscription",
+            description = """
+                    Creates a PayPal subscription and returns approval URL.
+                    User must open this URL to approve payment in PayPal.
 
-            **Body:** `{ "subscriptionId": "I-XXXXXXXXXXXX" }`
-            """,
-        responses = {
-            @ApiResponse(responseCode = "200", description = "Subscription activated",
-                content = @Content(schema = @Schema(implementation = Subscription.class))),
-            @ApiResponse(responseCode = "400", description = "Subscription not active on PayPal",
-                content = @Content)
-        }
+                    Flow:
+                    1. Backend creates subscription in PayPal
+                    2. Returns approvalUrl
+                    3. User opens link and approves payment
+                    """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Approval URL generated",
+                            content = @Content(
+                                    schema = @Schema(example = "{\"approvalUrl\": \"https://www.sandbox.paypal.com/checkoutnow?token=XXX\"}")
+                            )
+                    ),
+                    @ApiResponse(responseCode = "400", description = "Failed to create subscription")
+            }
+    )
+    @PostMapping("/create")
+    public Map<String, String> createSubscription() {
+        String approvalUrl = paypalSubscriptionService.createSubscriptionAndGetApprovalLink();
+        return Map.of("approvalUrl", approvalUrl);
+    }
+
+    @Operation(
+            summary = "Confirm PayPal subscription",
+            description = """
+                    Confirms subscription after PayPal approval.
+
+                    Steps:
+                    1. User approves subscription in PayPal
+                    2. PayPal redirects back with subscriptionId
+                    3. Backend verifies subscription status with PayPal API
+                    4. If ACTIVE → subscription is activated in DB
+                    """,
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(
+                            schema = @Schema(implementation = ConfirmPaypalSubscriptionRequest.class)
+                    )
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Subscription activated",
+                            content = @Content(schema = @Schema(implementation = Subscription.class))
+                    ),
+                    @ApiResponse(responseCode = "400", description = "Subscription not active in PayPal")
+            }
     )
     @PostMapping("/confirm")
     public Subscription confirm(@RequestBody ConfirmPaypalSubscriptionRequest request) {
@@ -70,31 +107,12 @@ public class SubscriptionController {
     }
 
     @Operation(
-        summary = "Save a pending subscription",
-        description = """
-            Saves the subscription in PENDING state before the user completes PayPal approval.
-            Call this immediately after the PayPal button creates the subscription,
-            so the record exists even if the user closes the window mid-flow.
-
-            **Body:** `{ "subscriptionId": "I-XXXXXXXXXXXX" }`
-            """,
-        responses = @ApiResponse(responseCode = "200",
-            content = @Content(schema = @Schema(implementation = Subscription.class)))
-    )
-    @PostMapping("/save-pending")
-    public Subscription savePending(@RequestBody SavePendingSubscriptionRequest request) {
-        String planCode = (request.getPlanCode() != null && !request.getPlanCode().isBlank())
-                ? request.getPlanCode()
-                : "PRO";
-        return paypalSubscriptionService.savePendingSubscription(
-                request.getSubscriptionId(), planCode);
-    }
-
-    @Operation(
-        summary = "Get my subscriptions",
-        description = "Returns all subscription records for the authenticated user.",
-        responses = @ApiResponse(responseCode = "200",
-            content = @Content(array = @ArraySchema(schema = @Schema(implementation = Subscription.class))))
+            summary = "Get my subscriptions",
+            description = "Returns all subscriptions for the currently authenticated user",
+            responses = @ApiResponse(
+                    responseCode = "200",
+                    content = @Content(schema = @Schema(implementation = Subscription.class))
+            )
     )
     @GetMapping("/my")
     @PreAuthorize("hasRole('STUDENT')")

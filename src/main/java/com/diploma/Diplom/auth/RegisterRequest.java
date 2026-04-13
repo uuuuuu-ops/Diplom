@@ -1,5 +1,7 @@
 package com.diploma.Diplom.auth;
 
+import com.diploma.Diplom.model.Role;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -24,6 +26,6 @@ public class RegisterRequest {
     private String password;
 
     @Schema(description = "The role of the user, e.g., STUDENT, TEACHER, or ADMIN")
-    private String role;
+    private Role role;
 }
 

@@ -1,26 +1,18 @@
 package com.diploma.Diplom.util;
 
-import com.diploma.Diplom.exception.ResourceNotFoundException;
-import com.diploma.Diplom.repository.UserRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SecurityUtils {
 
-    private final UserRepository userRepository;
-
-    public SecurityUtils(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
-
     public String getCurrentUserId() {
-        String email = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
+        var auth = SecurityContextHolder.getContext().getAuthentication();
 
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"))
-                .getId();
+        if (auth == null || auth.getPrincipal() == null) {
+            throw new RuntimeException("User not authenticated");
+        }
+
+        return (String) auth.getPrincipal(); 
     }
 }

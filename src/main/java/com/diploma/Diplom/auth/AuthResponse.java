@@ -3,6 +3,9 @@ package com.diploma.Diplom.auth;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import com.diploma.Diplom.model.Role;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 
@@ -17,7 +20,7 @@ public class AuthResponse {
     @Schema(description = "A message related to the authentication process")
     private String message;
     @Schema(description = "The role of the authenticated user, e.g., 'student', 'teacher', 'admin'")
-    private String role;
+    private Role role;
     @Schema(description = "Indicates whether the user has been approved by a teacher (if the user is a teacher applicant)")
     private Boolean teacherApproved;
     @Schema(description = "The email address of the authenticated user")
@@ -29,7 +32,7 @@ public class AuthResponse {
     this.message = message;
     }
 
-    public AuthResponse(String token, String role, Boolean teacherApproved, String email, String name) {
+    public AuthResponse(String token, Role role, Boolean teacherApproved, String email, String name) {
         this.token = token;
         this.role = role;
         this.teacherApproved = teacherApproved;
