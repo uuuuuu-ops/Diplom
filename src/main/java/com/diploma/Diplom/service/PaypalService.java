@@ -24,7 +24,7 @@ public class PaypalService {
     private final PaymentService paymentService;
     private final CourseRepository courseRepository;
     private final EnrollmentService enrollmentService;
-    private final PaypalTokenCache tokenCache;
+    private final PaypalTokenRedisCache tokenCache;
     private final SecurityUtils securityUtils;
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -33,7 +33,7 @@ public class PaypalService {
                          PaymentService paymentService,
                          CourseRepository courseRepository,
                          EnrollmentService enrollmentService,
-                         PaypalTokenCache tokenCache,
+                         PaypalTokenRedisCache tokenCache,
                          SecurityUtils securityUtils) {
         this.paypalProperties = paypalProperties;
         this.paymentService = paymentService;

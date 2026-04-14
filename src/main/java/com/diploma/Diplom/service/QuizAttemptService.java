@@ -59,7 +59,6 @@ public class QuizAttemptService {
         Lesson lesson = lessonRepository.findById(quiz.getLessonId())
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
-        // ── Grade answers ──────────────────────────────────────────────────
         List<QuizQuestion> questions = quiz.getQuestions();
         List<Integer> answers = request.getAnswers();
 

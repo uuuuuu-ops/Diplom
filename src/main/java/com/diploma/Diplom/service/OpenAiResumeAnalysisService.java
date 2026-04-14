@@ -121,7 +121,6 @@ public class OpenAiResumeAnalysisService {
         if (text == null) return 0;
         String lower = text.toLowerCase();
         if (lower.contains("project")) {
-            // грубая оценка по количеству упоминаний
             int count = 0;
             int idx = 0;
             while ((idx = lower.indexOf("project", idx)) != -1) {

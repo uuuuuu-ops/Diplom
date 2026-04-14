@@ -28,12 +28,12 @@ public class TeacherApplicationService {
     private final TeacherApplicationRepository teacherApplicationRepository;
     private final UserRepository userRepository;
     private final OpenAiResumeAnalysisService openAiResumeAnalysisService;
-    private final CloudinaryService cloudinaryService; // ← добавили
+    private final CloudinaryService cloudinaryService; 
 
     public TeacherApplicationService(TeacherApplicationRepository teacherApplicationRepository,
                                      UserRepository userRepository,
                                      OpenAiResumeAnalysisService openAiResumeAnalysisService,
-                                     CloudinaryService cloudinaryService) { // ← добавили
+                                     CloudinaryService cloudinaryService) { 
         this.teacherApplicationRepository = teacherApplicationRepository;
         this.userRepository = userRepository;
         this.openAiResumeAnalysisService = openAiResumeAnalysisService;
@@ -77,15 +77,14 @@ public class TeacherApplicationService {
                     request.getYearsOfExperience()
             );
 
-            // 4. Сохраняем заявку
             TeacherApplication application = new TeacherApplication();
             application.setUserId(user.getId());
             application.setFullName(request.getFullName());
             application.setEmail(user.getEmail());
             application.setResumeText(resumeText);
             application.setResumeFileName(originalFileName);
-            application.setResumeFileUrl(uploaded.getFileUrl());       // ← Cloudinary URL
-            application.setResumePublicId(uploaded.getPublicId());     // ← для удаления
+            application.setResumeFileUrl(uploaded.getFileUrl());       
+            application.setResumePublicId(uploaded.getPublicId());     
             application.setSpecialization(request.getSpecialization());
             application.setYearsOfExperience(request.getYearsOfExperience());
             application.setStatus("PENDING");

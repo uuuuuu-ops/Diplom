@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.diploma.Diplom.exception.ForbiddenException;
 import com.diploma.Diplom.exception.ResourceNotFoundException;
+import com.diploma.Diplom.messaging.CertificateProducer;
 import com.diploma.Diplom.model.CourseProgress;
 import com.diploma.Diplom.model.Lesson;
 import com.diploma.Diplom.model.Quiz;
@@ -24,20 +25,23 @@ public class CourseProgressService {
     private final LessonRepository lessonRepository;
     private final QuizRepository quizRepository;
     private final CertificateRepository certificateRepository;
-    private final CertificateService certificateService;
+    private final CertificateProducer certificateProducer;
+
 
     public CourseProgressService(
             CourseProgressRepository courseProgressRepository,
             LessonRepository lessonRepository,
             QuizRepository quizRepository,
             CertificateRepository certificateRepository,
-            CertificateService certificateService
+            CertificateProducer certificateProducer
+
     ) {
         this.courseProgressRepository = courseProgressRepository;
         this.lessonRepository = lessonRepository;
         this.quizRepository = quizRepository;
         this.certificateRepository = certificateRepository;
-        this.certificateService = certificateService;
+        this.certificateProducer = certificateProducer;
+
     }
 
     /**
@@ -89,7 +93,6 @@ public class CourseProgressService {
         Lesson target = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
-        // first lesson is always unlocked
         if (target.getOrderIndex() == 0) return true;
 
         List<Lesson> allLessons = lessonRepository
@@ -101,12 +104,10 @@ public class CourseProgressService {
             if (!previous.isPublished()) continue;
             if (previous.getOrderIndex() >= target.getOrderIndex()) break;
 
-            // previous lesson must be completed
             if (!progress.getCompletedLessonIds().contains(previous.getId())) {
                 return false;
             }
 
-            // if it requires a quiz, that quiz must be passed too
             if (previous.isQuizRequired()) {
                 Quiz quiz = quizRepository.findByLessonId(previous.getId()).orElse(null);
                 if (quiz != null && !progress.getPassedQuizIds().contains(quiz.getId())) {
@@ -183,7 +184,7 @@ public class CourseProgressService {
                     .isPresent();
 
             if (!certificateExists) {
-                certificateService.issueCertificate(progress.getUserId(), progress.getCourseId());
+                certificateProducer.requestCertificate(progress.getUserId(), progress.getCourseId());
             }
         }
     }

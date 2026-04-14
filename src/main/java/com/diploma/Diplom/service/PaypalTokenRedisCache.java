@@ -2,52 +2,42 @@ package com.diploma.Diplom.service;
 
 import com.diploma.Diplom.config.PaypalProperties;
 import com.diploma.Diplom.exception.PaymentException;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.Instant;
+import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
+@Primary          
 @Component
 @RequiredArgsConstructor
-public class PaypalTokenCache {
+public class PaypalTokenRedisCache {
+
+    private static final String REDIS_KEY = "paypal:access_token";
 
     private final PaypalProperties paypalProperties;
+    private final RedisTemplate<String, String> redisTemplate;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    private volatile String cachedToken;
-    private volatile Instant tokenExpiresAt = Instant.MIN;
-
-    private final ReentrantLock lock = new ReentrantLock();
-
     public String getAccessToken() {
-        if (cachedToken != null && Instant.now().isBefore(tokenExpiresAt)) {
-            return cachedToken;
+        String cached = redisTemplate.opsForValue().get(REDIS_KEY);
+        if (cached != null) {
+            return cached;
         }
-
-        lock.lock();
-        try {
-            if (cachedToken != null && Instant.now().isBefore(tokenExpiresAt)) {
-                return cachedToken;
-            }
-            return fetchNewToken();
-        } finally {
-            lock.unlock();
-        }
+        return fetchAndCache();
     }
 
-    private String fetchNewToken() {
-        log.debug("Fetching new PayPal access token");
+    private String fetchAndCache() {
+        log.debug("Fetching new PayPal access token from API");
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBasicAuth(paypalProperties.getClientId(), paypalProperties.getClientSecret());
@@ -56,13 +46,11 @@ public class PaypalTokenCache {
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "client_credentials");
 
-        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
-
         ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-            paypalProperties.getBaseUrl() + "/v1/oauth2/token",
-            HttpMethod.POST,
-            entity,
-            new ParameterizedTypeReference<Map<String, Object>>() {}
+                paypalProperties.getBaseUrl() + "/v1/oauth2/token",
+                HttpMethod.POST,
+                new HttpEntity<>(body, headers),
+                new ParameterizedTypeReference<>() {}
         );
 
         Map<String, Object> responseBody = response.getBody();
@@ -70,12 +58,12 @@ public class PaypalTokenCache {
             throw new PaymentException("Failed to get PayPal access token");
         }
 
-        cachedToken = (String) responseBody.get("access_token");
-
+        String token = (String) responseBody.get("access_token");
         int expiresIn = (Integer) responseBody.getOrDefault("expires_in", 3600);
-        tokenExpiresAt = Instant.now().plusSeconds(expiresIn - 60);
+        // Сохраняем с TTL на 60 секунд меньше реального срока
+        redisTemplate.opsForValue().set(REDIS_KEY, token, Duration.ofSeconds(expiresIn - 60));
 
-        log.debug("PayPal access token refreshed, expires in {} seconds", expiresIn - 60);
-        return cachedToken;
+        log.debug("PayPal token cached in Redis, TTL = {} sec", expiresIn - 60);
+        return token;
     }
 }

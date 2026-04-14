@@ -24,7 +24,7 @@ public class User {
 
     @Schema(description = "Hashed password — never returned in API responses")
     private String password;
-
+    
     @Schema(description = "Role of the user: STUDENT or TEACHER")
     private Role role;
 

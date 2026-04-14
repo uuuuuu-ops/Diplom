@@ -38,8 +38,8 @@ public class QuizService {
         this.userRepository = userRepository;
     }
 
-    public Quiz createQuiz(String teacherEmail, String lessonId, CreateQuizRequest request) {
-        User user = getApprovedTeacher(teacherEmail);
+    public Quiz createQuiz(String userId, String lessonId, CreateQuizRequest request) {
+        User user = getApprovedTeacher(userId);
 
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
@@ -61,7 +61,7 @@ public class QuizService {
         quiz.setDescription(request.getDescription());
         quiz.setQuestions(request.getQuestions());
         quiz.setPassingScore(request.getPassingScore() != null ? request.getPassingScore() : 60);
-        quiz.setTimeLimitSeconds(request.getTimeLimitSeconds()); // null = no limit
+        quiz.setTimeLimitSeconds(request.getTimeLimitSeconds()); 
         quiz.setPublished(false);
         quiz.setCreatedAt(LocalDateTime.now());
         quiz.setUpdatedAt(LocalDateTime.now());
@@ -79,8 +79,8 @@ public class QuizService {
                 .orElseThrow(() -> new ResourceNotFoundException("No quiz found for this lesson"));
     }
 
-    public Quiz updateQuiz(String teacherEmail, String quizId, UpdateQuizRequest request) {
-        User user = getApprovedTeacher(teacherEmail);
+    public Quiz updateQuiz(String userId, String quizId, UpdateQuizRequest request) {
+        User user = getApprovedTeacher(userId);
 
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new ResourceNotFoundException("Quiz not found"));
@@ -98,7 +98,6 @@ public class QuizService {
         if (request.getPassingScore() != null) quiz.setPassingScore(request.getPassingScore());
 
         if (request.getTimeLimitSeconds() != null) {
-            // -1 signals "remove the time limit"
             quiz.setTimeLimitSeconds(request.getTimeLimitSeconds() == -1
                     ? null
                     : request.getTimeLimitSeconds());
@@ -115,8 +114,8 @@ public class QuizService {
         return quizRepository.save(quiz);
     }
 
-    public void deleteQuiz(String teacherEmail, String quizId) {
-        User user = getApprovedTeacher(teacherEmail);
+    public void deleteQuiz(String userId, String quizId) {
+        User user = getApprovedTeacher(userId);
 
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new ResourceNotFoundException("Quiz not found"));
@@ -147,8 +146,8 @@ public class QuizService {
         }
     }
 
-    private User getApprovedTeacher(String teacherEmail) {
-        User user = userRepository.findByEmail(teacherEmail)
+    private User getApprovedTeacher(String userId) {
+        User user = userRepository.findByEmail(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if (user.getRole() != Role.TEACHER)
             throw new ForbiddenException("Only teachers can manage quizzes");

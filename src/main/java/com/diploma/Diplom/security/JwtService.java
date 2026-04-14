@@ -37,13 +37,12 @@ public class JwtService {
     }
 
     public String extractUserId(String token) {
-    Claims claims = Jwts.parserBuilder()
-            .setSigningKey(getSignInKey())
-            .build()
-            .parseClaimsJws(token)
-            .getBody();
-
-    return claims.getSubject(); 
+        return Jwts.parserBuilder()
+                .setSigningKey(getSignInKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject(); 
     }
 
     public boolean validateToken(String token) {

@@ -66,7 +66,7 @@ public class PaypalSubscriptionService {
 
     public String createSubscriptionAndGetApprovalLink() {
 
-        String token = getAccessToken(); // 🔥 ВАЖНО
+        String token = getAccessToken(); 
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

@@ -62,10 +62,11 @@ class CourseServiceTest {
         req.setFree(false);
         req.setPrice(new BigDecimal("29.99"));
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        // FIX: service.getApprovedTeacher uses findById(userId), not findByEmail
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(courseRepository.save(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Course result = courseService.createCourse("teacher@test.com", req, null);
+        Course result = courseService.createCourse("teacher-1", req, null);
 
         assertThat(result.getTitle()).isEqualTo("Java Basics");
         assertThat(result.getPrice()).isEqualByComparingTo("29.99");
@@ -79,10 +80,10 @@ class CourseServiceTest {
         req.setTitle("Free Course");
         req.setFree(true);
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(courseRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Course result = courseService.createCourse("teacher@test.com", req, null);
+        Course result = courseService.createCourse("teacher-1", req, null);
 
         assertThat(result.getPrice()).isEqualByComparingTo(BigDecimal.ZERO);
     }
@@ -93,11 +94,11 @@ class CourseServiceTest {
         CreateCourseRequest req = new CreateCourseRequest();
         req.setTitle("Paid Course");
         req.setFree(false);
-        req.setPrice(null); // цена не указана
+        req.setPrice(null);
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
 
-        assertThatThrownBy(() -> courseService.createCourse("teacher@test.com", req, null))
+        assertThatThrownBy(() -> courseService.createCourse("teacher-1", req, null))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Price is required");
     }
@@ -106,11 +107,12 @@ class CourseServiceTest {
     @DisplayName("createCourse: пользователь не является преподавателем — ForbiddenException")
     void createCourse_notTeacher_throws() {
         User student = new User();
+        student.setId("student-1");
         student.setRole(Role.STUDENT);
 
-        when(userRepository.findByEmail("student@test.com")).thenReturn(Optional.of(student));
+        when(userRepository.findById("student-1")).thenReturn(Optional.of(student));
 
-        assertThatThrownBy(() -> courseService.createCourse("student@test.com", new CreateCourseRequest(), null))
+        assertThatThrownBy(() -> courseService.createCourse("student-1", new CreateCourseRequest(), null))
                 .isInstanceOf(ForbiddenException.class);
     }
 
@@ -118,10 +120,19 @@ class CourseServiceTest {
     @DisplayName("createCourse: преподаватель не подтверждён — ForbiddenException")
     void createCourse_teacherNotApproved_throws() {
         approvedTeacher.setTeacherApproved(false);
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
 
-        assertThatThrownBy(() -> courseService.createCourse("teacher@test.com", new CreateCourseRequest(), null))
+        assertThatThrownBy(() -> courseService.createCourse("teacher-1", new CreateCourseRequest(), null))
                 .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    @DisplayName("createCourse: пользователь не найден — ResourceNotFoundException")
+    void createCourse_userNotFound_throws() {
+        when(userRepository.findById("ghost-id")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> courseService.createCourse("ghost-id", new CreateCourseRequest(), null))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -138,11 +149,11 @@ class CourseServiceTest {
         when(uploadResult.getFileUrl()).thenReturn("https://cdn.example.com/thumb.jpg");
         when(uploadResult.getPublicId()).thenReturn("thumbnails/abc123");
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(cloudinaryService.uploadFile(file, "thumbnails")).thenReturn(uploadResult);
         when(courseRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Course result = courseService.createCourse("teacher@test.com", req, file);
+        Course result = courseService.createCourse("teacher-1", req, file);
 
         assertThat(result.getThumbnail()).isEqualTo("https://cdn.example.com/thumb.jpg");
         assertThat(result.getThumbnailPublicId()).isEqualTo("thumbnails/abc123");
@@ -161,11 +172,11 @@ class CourseServiceTest {
         UpdateCourseRequest req = new UpdateCourseRequest();
         req.setTitle("New Title");
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(courseRepository.findById("course-1")).thenReturn(Optional.of(existing));
         when(courseRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Course result = courseService.updateCourse("teacher@test.com", "course-1", req, null);
+        Course result = courseService.updateCourse("teacher-1", "course-1", req, null);
 
         assertThat(result.getTitle()).isEqualTo("New Title");
     }
@@ -177,21 +188,48 @@ class CourseServiceTest {
         existing.setId("course-1");
         existing.setTeacherId("other-teacher");
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(courseRepository.findById("course-1")).thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> courseService.updateCourse("teacher@test.com", "course-1", new UpdateCourseRequest(), null))
+        assertThatThrownBy(() -> courseService.updateCourse("teacher-1", "course-1", new UpdateCourseRequest(), null))
                 .isInstanceOf(ForbiddenException.class);
     }
 
     @Test
     @DisplayName("updateCourse: курс не найден — ResourceNotFoundException")
     void updateCourse_courseNotFound_throws() {
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        // FIX: только нужные стабы — сначала юзер находится, потом курс — нет
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(courseRepository.findById("missing")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> courseService.updateCourse("teacher@test.com", "missing", new UpdateCourseRequest(), null))
+        assertThatThrownBy(() -> courseService.updateCourse("teacher-1", "missing", new UpdateCourseRequest(), null))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("updateCourse: с новым превью — старый файл удаляется, новый загружается")
+    void updateCourse_withNewThumbnail_replacesOld() {
+        Course existing = new Course();
+        existing.setId("course-1");
+        existing.setTeacherId("teacher-1");
+        existing.setThumbnailPublicId("thumbnails/old-id");
+
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(false);
+
+        CloudinaryService.FileUploadResult uploadResult = mock(CloudinaryService.FileUploadResult.class);
+        when(uploadResult.getFileUrl()).thenReturn("https://cdn.example.com/new.jpg");
+        when(uploadResult.getPublicId()).thenReturn("thumbnails/new-id");
+
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
+        when(courseRepository.findById("course-1")).thenReturn(Optional.of(existing));
+        when(cloudinaryService.uploadFile(file, "thumbnails")).thenReturn(uploadResult);
+        when(courseRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        courseService.updateCourse("teacher-1", "course-1", new UpdateCourseRequest(), file);
+
+        verify(cloudinaryService).deleteFile("thumbnails/old-id");
+        verify(cloudinaryService).uploadFile(file, "thumbnails");
     }
 
     // ─────────────────────── deleteCourse ───────────────────────────────
@@ -203,11 +241,11 @@ class CourseServiceTest {
         existing.setId("course-1");
         existing.setTeacherId("teacher-1");
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(courseRepository.findById("course-1")).thenReturn(Optional.of(existing));
         when(lessonRepository.findByCourseIdOrderByOrderIndexAsc("course-1")).thenReturn(Collections.emptyList());
 
-        courseService.deleteCourse("teacher@test.com", "course-1");
+        courseService.deleteCourse("teacher-1", "course-1");
 
         verify(courseRepository).delete(existing);
         verify(lessonRepository).deleteAll(any());
@@ -221,13 +259,37 @@ class CourseServiceTest {
         existing.setTeacherId("teacher-1");
         existing.setThumbnailPublicId("thumbnails/abc123");
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(courseRepository.findById("course-1")).thenReturn(Optional.of(existing));
         when(lessonRepository.findByCourseIdOrderByOrderIndexAsc("course-1")).thenReturn(Collections.emptyList());
 
-        courseService.deleteCourse("teacher@test.com", "course-1");
+        courseService.deleteCourse("teacher-1", "course-1");
 
         verify(cloudinaryService).deleteFile("thumbnails/abc123");
+    }
+
+    @Test
+    @DisplayName("deleteCourse: чужой курс — ForbiddenException")
+    void deleteCourse_notOwner_throws() {
+        Course existing = new Course();
+        existing.setId("course-1");
+        existing.setTeacherId("other-teacher");
+
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
+        when(courseRepository.findById("course-1")).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> courseService.deleteCourse("teacher-1", "course-1"))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    @DisplayName("deleteCourse: курс не найден — ResourceNotFoundException")
+    void deleteCourse_courseNotFound_throws() {
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
+        when(courseRepository.findById("missing")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> courseService.deleteCourse("teacher-1", "missing"))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     // ─────────────────────── getPublicCourses ───────────────────────────
@@ -246,7 +308,17 @@ class CourseServiceTest {
         assertThat(result).allMatch(Course::isPublished);
     }
 
-    // ─────────────────────── getTeacherCourses ───────────────────────────
+    @Test
+    @DisplayName("getPublicCourses: нет опубликованных курсов — возвращает пустой список")
+    void getPublicCourses_empty() {
+        when(courseRepository.findByPublishedTrue()).thenReturn(Collections.emptyList());
+
+        List<Course> result = courseService.getPublicCourses();
+
+        assertThat(result).isEmpty();
+    }
+
+    // ─────────────────────── getTeacherCourses ────────────────────────────
 
     @Test
     @DisplayName("getTeacherCourses: возвращает курсы конкретного преподавателя")
@@ -254,12 +326,50 @@ class CourseServiceTest {
         Course c = new Course();
         c.setTeacherId("teacher-1");
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(courseRepository.findByTeacherId("teacher-1")).thenReturn(List.of(c));
 
-        List<Course> result = courseService.getTeacherCourses("teacher@test.com");
+        List<Course> result = courseService.getTeacherCourses("teacher-1");
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getTeacherId()).isEqualTo("teacher-1");
+    }
+
+    @Test
+    @DisplayName("getTeacherCourses: у преподавателя нет курсов — пустой список")
+    void getTeacherCourses_noCourses() {
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
+        when(courseRepository.findByTeacherId("teacher-1")).thenReturn(Collections.emptyList());
+
+        List<Course> result = courseService.getTeacherCourses("teacher-1");
+
+        assertThat(result).isEmpty();
+    }
+
+    // ─────────────────────── getCourseById ────────────────────────────────
+
+    @Test
+    @DisplayName("getCourseById: возвращает курс по ID")
+    void getCourseById_success() {
+        Course course = new Course();
+        course.setId("course-1");
+        course.setTitle("Test Course");
+
+        when(courseRepository.findById("course-1")).thenReturn(Optional.of(course));
+
+        Course result = courseService.getCourseById("course-1");
+
+        assertThat(result.getId()).isEqualTo("course-1");
+        assertThat(result.getTitle()).isEqualTo("Test Course");
+    }
+
+    @Test
+    @DisplayName("getCourseById: курс не найден — ResourceNotFoundException")
+    void getCourseById_notFound_throws() {
+        when(courseRepository.findById("missing")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> courseService.getCourseById("missing"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("missing");
     }
 }

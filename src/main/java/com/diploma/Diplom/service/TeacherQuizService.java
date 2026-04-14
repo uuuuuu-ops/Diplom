@@ -47,7 +47,6 @@ public TeacherQuizAttempt submitQuiz(String userId,
     TeacherApplication app = applicationRepository.findById(applicationId)
             .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
 
-    // 🔥 FIX HERE
     if (!app.getUserId().equals(userId)) {
         throw new ForbiddenException("Not your application");
     }

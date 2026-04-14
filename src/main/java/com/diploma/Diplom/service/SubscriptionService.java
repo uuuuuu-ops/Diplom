@@ -63,8 +63,8 @@ public class SubscriptionService {
         return subscriptionRepository.findByUserId(securityUtils.getCurrentUserId());
     }
 
-    private Subscription getByPaypalSubscriptionId(String paypalSubscriptionId) {
-        return subscriptionRepository.findByPaypalSubscriptionId(paypalSubscriptionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Subscription not found: " + paypalSubscriptionId));
+    public Subscription getByPaypalSubscriptionId(String id) {
+        return subscriptionRepository.findByPaypalSubscriptionId(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Subscription not found"));
     }
 }

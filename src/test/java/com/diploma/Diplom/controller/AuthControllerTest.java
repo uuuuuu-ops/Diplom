@@ -9,6 +9,7 @@ import com.diploma.Diplom.exception.ConflictException;
 import com.diploma.Diplom.exception.GlobalExceptionHandler;
 import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.exception.UnauthorizedException;
+import com.diploma.Diplom.model.Role;
 import com.diploma.Diplom.repository.UserRepository;
 import com.diploma.Diplom.security.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,7 +36,7 @@ class AuthControllerTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @MockitoBean AuthService authService;
-    @MockitoBean JwtService jwtService; // чтобы не было проблем с контекстом безопасности при тестах контроллера
+    @MockitoBean JwtService jwtService;
     @MockitoBean UserRepository userRepository;
 
     // ─────────────────────── POST /auth/register ─────────────────────────
@@ -48,8 +49,7 @@ class AuthControllerTest {
         req.setEmail("alice@test.com");
         req.setPassword("securePass1");
 
-        AuthResponse response = new AuthResponse();
-        response.setMessage("Verification code sent to alice@test.com");
+        AuthResponse response = new AuthResponse("Verification code sent to alice@test.com");
 
         when(authService.register(any(RegisterRequest.class))).thenReturn(response);
 
@@ -85,13 +85,13 @@ class AuthControllerTest {
         req.setEmail("alice@test.com");
         req.setCode("123456");
 
-        when(authService.verify(any(VerifyRequest.class))).thenReturn("Email verified successfully");
+        when(authService.verify(any(VerifyRequest.class))).thenReturn("Account verified successfully");
 
         mockMvc.perform(post("/auth/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Email verified successfully"));
+                .andExpect(content().string("Account verified successfully"));
     }
 
     @Test
@@ -112,15 +112,14 @@ class AuthControllerTest {
     // ─────────────────────── POST /auth/login ────────────────────────────
 
     @Test
-    @DisplayName("POST /auth/login: успешный вход — 200 с токеном")
+    @DisplayName("POST /auth/login: успешный вход — 200 с токеном и ролью")
     void login_success() throws Exception {
         AuthRequest req = new AuthRequest();
         req.setEmail("alice@test.com");
         req.setPassword("securePass1");
 
-        AuthResponse response = new AuthResponse();
-        response.setToken("jwt-token-abc");
-        response.setEmail("alice@test.com");
+        // исправлено: создаём AuthResponse с явно заданной ролью
+        AuthResponse response = new AuthResponse("jwt-token-abc", Role.STUDENT, false, "alice@test.com", "Alice");
 
         when(authService.login(any(AuthRequest.class))).thenReturn(response);
 

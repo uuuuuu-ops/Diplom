@@ -1,0 +1,489 @@
+[5] ГОТОВЫЙ КОД
+Like.java — MongoDB документ
+javapackage com.diploma.Diplom.model;
+
+import lombok.Data;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.time.Instant;
+
+@Data
+@Document(collection = "likes")
+@CompoundIndex(name = "user_course_idx", def = "{'userId': 1, 'courseId': 1}", unique = true)
+public class Like {
+
+    @Id
+    private String id;
+    private String userId;
+    private String courseId;
+    private Instant createdAt = Instant.now();
+}
+
+Comment.java — MongoDB документ
+javapackage com.diploma.Diplom.model;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.time.Instant;
+
+@Data
+@Document(collection = "comments")
+public class Comment {
+
+    @Id
+    private String id;
+
+    @Indexed
+    private String courseId;
+
+    private String userId;
+    private String authorName;    // денормализация — чтобы не делать join
+
+    @NotBlank
+    @Size(max = 1000)
+    private String text;
+
+    private boolean edited = false;
+    private Instant createdAt = Instant.now();
+    private Instant updatedAt = Instant.now();
+}
+
+LikeRepository.java
+javapackage com.diploma.Diplom.repository;
+
+import com.diploma.Diplom.model.Like;
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+import java.util.Optional;
+
+public interface LikeRepository extends MongoRepository<Like, String> {
+    Optional<Like> findByUserIdAndCourseId(String userId, String courseId);
+    long countByCourseId(String courseId);
+    void deleteByUserIdAndCourseId(String userId, String courseId);
+}
+
+CommentRepository.java
+javapackage com.diploma.Diplom.repository;
+
+import com.diploma.Diplom.model.Comment;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+import java.util.Optional;
+
+public interface CommentRepository extends MongoRepository<Comment, String> {
+    Page<Comment> findByCourseIdOrderByCreatedAtDesc(String courseId, Pageable pageable);
+    long countByCourseId(String courseId);
+    Optional<Comment> findByIdAndUserId(String id, String userId);
+}
+
+DTO классы
+java// LikeResponse.java
+package com.diploma.Diplom.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+@Data
+@AllArgsConstructor
+public class LikeResponse {
+    private boolean liked;       // лайкнул ли текущий пользователь
+    private long totalLikes;
+}
+java// CommentRequest.java
+package com.diploma.Diplom.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+@Data
+public class CommentRequest {
+    @NotBlank
+    @Size(max = 1000, message = "Comment too long")
+    private String text;
+}
+java// CommentResponse.java
+package com.diploma.Diplom.dto;
+
+import lombok.Data;
+import java.time.Instant;
+
+@Data
+public class CommentResponse {
+    private String id;
+    private String courseId;
+    private String userId;
+    private String authorName;
+    private String text;
+    private boolean edited;
+    private Instant createdAt;
+    private boolean canEdit;     // true если текущий юзер — автор комментария
+}
+
+CommentMapper.java
+javapackage com.diploma.Diplom.mapper;
+
+import com.diploma.Diplom.dto.CommentResponse;
+import com.diploma.Diplom.model.Comment;
+import org.springframework.stereotype.Component;
+
+@Component
+public class CommentMapper {
+
+    public CommentResponse toResponse(Comment comment, String currentUserId) {
+        CommentResponse dto = new CommentResponse();
+        dto.setId(comment.getId());
+        dto.setCourseId(comment.getCourseId());
+        dto.setUserId(comment.getUserId());
+        dto.setAuthorName(comment.getAuthorName());
+        dto.setText(comment.getText());
+        dto.setEdited(comment.isEdited());
+        dto.setCreatedAt(comment.getCreatedAt());
+        dto.setCanEdit(comment.getUserId().equals(currentUserId));
+        return dto;
+    }
+}
+
+LikeService.java
+javapackage com.diploma.Diplom.service;
+
+import com.diploma.Diplom.dto.LikeResponse;
+import com.diploma.Diplom.model.Like;
+import com.diploma.Diplom.repository.LikeRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+
+import java.time.Duration;
+import java.util.Optional;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class LikeService {
+
+    private static final String LIKES_KEY = "likes:course:";
+    private static final Duration CACHE_TTL = Duration.ofMinutes(30);
+
+    private final LikeRepository likeRepository;
+    private final RedisTemplate<String, String> redisTemplate;
+
+    public LikeResponse toggle(String courseId, String userId) {
+        Optional<Like> existing = likeRepository.findByUserIdAndCourseId(userId, courseId);
+
+        if (existing.isPresent()) {
+            likeRepository.deleteByUserIdAndCourseId(userId, courseId);
+            long count = decrementCache(courseId);
+            log.debug("User {} unliked course {}", userId, courseId);
+            return new LikeResponse(false, count);
+        } else {
+            Like like = new Like();
+            like.setUserId(userId);
+            like.setCourseId(courseId);
+            likeRepository.save(like);
+            long count = incrementCache(courseId);
+            log.debug("User {} liked course {}", userId, courseId);
+            return new LikeResponse(true, count);
+        }
+    }
+
+    public LikeResponse getStatus(String courseId, String userId) {
+        boolean liked = likeRepository.findByUserIdAndCourseId(userId, courseId).isPresent();
+        long count = getCachedCount(courseId);
+        return new LikeResponse(liked, count);
+    }
+
+    private long getCachedCount(String courseId) {
+        String key = LIKES_KEY + courseId;
+        String cached = redisTemplate.opsForValue().get(key);
+        if (cached != null) {
+            return Long.parseLong(cached);
+        }
+        long count = likeRepository.countByCourseId(courseId);
+        redisTemplate.opsForValue().set(key, String.valueOf(count), CACHE_TTL);
+        return count;
+    }
+
+    private long incrementCache(String courseId) {
+        String key = LIKES_KEY + courseId;
+        Long result = redisTemplate.opsForValue().increment(key);
+        if (result == null) {
+            return likeRepository.countByCourseId(courseId);
+        }
+        redisTemplate.expire(key, CACHE_TTL);
+        return result;
+    }
+
+    private long decrementCache(String courseId) {
+        String key = LIKES_KEY + courseId;
+        Long result = redisTemplate.opsForValue().decrement(key);
+        if (result == null || result < 0) {
+            long count = likeRepository.countByCourseId(courseId);
+            redisTemplate.opsForValue().set(key, String.valueOf(count), CACHE_TTL);
+            return count;
+        }
+        redisTemplate.expire(key, CACHE_TTL);
+        return result;
+    }
+}
+
+CommentService.java
+javapackage com.diploma.Diplom.service;
+
+import com.diploma.Diplom.dto.CommentRequest;
+import com.diploma.Diplom.dto.CommentResponse;
+import com.diploma.Diplom.exception.ForbiddenException;
+import com.diploma.Diplom.exception.ResourceNotFoundException;
+import com.diploma.Diplom.mapper.CommentMapper;
+import com.diploma.Diplom.messaging.CommentNotificationProducer;
+import com.diploma.Diplom.model.Comment;
+import com.diploma.Diplom.model.User;
+import com.diploma.Diplom.repository.CommentRepository;
+import com.diploma.Diplom.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class CommentService {
+
+    private final CommentRepository commentRepository;
+    private final UserRepository userRepository;
+    private final CommentMapper commentMapper;
+    private final CommentNotificationProducer notificationProducer;
+
+    public CommentResponse addComment(String courseId, String userId, CommentRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Comment comment = new Comment();
+        comment.setCourseId(courseId);
+        comment.setUserId(userId);
+        comment.setAuthorName(user.getName());
+        comment.setText(request.getText().trim());
+        comment.setCreatedAt(Instant.now());
+        comment.setUpdatedAt(Instant.now());
+
+        Comment saved = commentRepository.save(comment);
+        log.debug("Comment added by userId={} on courseId={}", userId, courseId);
+
+        // Уведомление автору курса через RabbitMQ (асинхронно)
+        notificationProducer.notifyNewComment(courseId, userId, user.getName());
+
+        return commentMapper.toResponse(saved, userId);
+    }
+
+    public Page<CommentResponse> getComments(String courseId, String currentUserId, int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size);
+        return commentRepository.findByCourseIdOrderByCreatedAtDesc(courseId, pageable)
+                .map(c -> commentMapper.toResponse(c, currentUserId));
+    }
+
+    public CommentResponse editComment(String commentId, String userId, CommentRequest request) {
+        Comment comment = commentRepository.findByIdAndUserId(commentId, userId)
+                .orElseThrow(() -> new ForbiddenException("Comment not found or access denied"));
+
+        comment.setText(request.getText().trim());
+        comment.setEdited(true);
+        comment.setUpdatedAt(Instant.now());
+
+        Comment saved = commentRepository.save(comment);
+        return commentMapper.toResponse(saved, userId);
+    }
+
+    public void deleteComment(String commentId, String userId, boolean isAdmin) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
+
+        if (!isAdmin && !comment.getUserId().equals(userId)) {
+            throw new ForbiddenException("Access denied");
+        }
+
+        commentRepository.delete(comment);
+        log.debug("Comment {} deleted by userId={}", commentId, userId);
+    }
+}
+
+CommentNotificationProducer.java
+javapackage com.diploma.Diplom.messaging;
+
+import com.diploma.Diplom.config.RabbitMQConfig;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.stereotype.Component;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class CommentNotificationProducer {
+
+    private final RabbitTemplate rabbitTemplate;
+
+    public void notifyNewComment(String courseId, String authorId, String authorName) {
+        CommentNotificationMessage message = new CommentNotificationMessage(
+                courseId, authorId, authorName
+        );
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.NOTIFICATION_EXCHANGE,
+                RabbitMQConfig.NOTIFICATION_ROUTING_KEY,
+                message
+        );
+        log.info("Queued comment notification for courseId={}", courseId);
+    }
+}
+
+RabbitMQConfig.java — добавить новую очередь
+java// Добавить в RabbitMQConfig.java:
+
+public static final String NOTIFICATION_QUEUE   = "notification.queue";
+public static final String NOTIFICATION_EXCHANGE  = "notification.exchange";
+public static final String NOTIFICATION_ROUTING_KEY = "notification.comment";
+public static final String NOTIFICATION_DLQ     = "notification.dlq";
+
+@Bean
+public Queue notificationQueue() {
+    return QueueBuilder.durable(NOTIFICATION_QUEUE)
+            .withArgument("x-dead-letter-exchange", "")
+            .withArgument("x-dead-letter-routing-key", NOTIFICATION_DLQ)
+            .build();
+}
+
+@Bean
+public Queue notificationDlq() {
+    return QueueBuilder.durable(NOTIFICATION_DLQ).build();
+}
+
+@Bean
+public DirectExchange notificationExchange() {
+    return new DirectExchange(NOTIFICATION_EXCHANGE);
+}
+
+@Bean
+public Binding notificationBinding(Queue notificationQueue, DirectExchange notificationExchange) {
+    return BindingBuilder.bind(notificationQueue)
+            .to(notificationExchange)
+            .with(NOTIFICATION_ROUTING_KEY);
+}
+
+LikeCommentController.java
+javapackage com.diploma.Diplom.controller;
+
+import com.diploma.Diplom.dto.CommentRequest;
+import com.diploma.Diplom.dto.CommentResponse;
+import com.diploma.Diplom.dto.LikeResponse;
+import com.diploma.Diplom.security.SecurityUtils;
+import com.diploma.Diplom.service.CommentService;
+import com.diploma.Diplom.service.LikeService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/courses/{courseId}")
+@RequiredArgsConstructor
+public class LikeCommentController {
+
+    private final LikeService likeService;
+    private final CommentService commentService;
+
+    // --- LIKES ---
+
+    @PostMapping("/like")
+    @PreAuthorize("hasAnyRole('STUDENT', 'INSTRUCTOR')")
+    public ResponseEntity<LikeResponse> toggleLike(@PathVariable String courseId) {
+        String userId = SecurityUtils.getCurrentUserId();
+        return ResponseEntity.ok(likeService.toggle(courseId, userId));
+    }
+
+    @GetMapping("/like")
+    public ResponseEntity<LikeResponse> getLikeStatus(@PathVariable String courseId) {
+        String userId = SecurityUtils.getCurrentUserId();
+        return ResponseEntity.ok(likeService.getStatus(courseId, userId));
+    }
+
+    // --- COMMENTS ---
+
+    @PostMapping("/comments")
+    @PreAuthorize("hasAnyRole('STUDENT', 'INSTRUCTOR')")
+    public ResponseEntity<CommentResponse> addComment(
+            @PathVariable String courseId,
+            @Valid @RequestBody CommentRequest request) {
+        String userId = SecurityUtils.getCurrentUserId();
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(commentService.addComment(courseId, userId, request));
+    }
+
+    @GetMapping("/comments")
+    public ResponseEntity<Page<CommentResponse>> getComments(
+            @PathVariable String courseId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        String userId = SecurityUtils.getCurrentUserId();
+        return ResponseEntity.ok(commentService.getComments(courseId, userId, page, size));
+    }
+
+    @PutMapping("/comments/{commentId}")
+    @PreAuthorize("hasAnyRole('STUDENT', 'INSTRUCTOR')")
+    public ResponseEntity<CommentResponse> editComment(
+            @PathVariable String courseId,
+            @PathVariable String commentId,
+            @Valid @RequestBody CommentRequest request) {
+        String userId = SecurityUtils.getCurrentUserId();
+        return ResponseEntity.ok(commentService.editComment(commentId, userId, request));
+    }
+
+    @DeleteMapping("/comments/{commentId}")
+    @PreAuthorize("hasAnyRole('STUDENT', 'INSTRUCTOR', 'ADMIN')")
+    public ResponseEntity<Void> deleteComment(
+            @PathVariable String courseId,
+            @PathVariable String commentId) {
+        String userId = SecurityUtils.getCurrentUserId();
+        boolean isAdmin = SecurityUtils.hasRole("ADMIN");
+        commentService.deleteComment(commentId, userId, isAdmin);
+        return ResponseEntity.noContent().build();
+    }
+}
+
+[6] МОИ ИДЕИ — что ещё логично добавить
+Вот что органично вырастает из лайков и комментов:
+1. Рейтинг курса (1-5 звёзд)
+Студент, получивший сертификат, может оставить оценку. Средняя оценка кешируется в Redis, обновляется при каждом новом рейтинге.
+2. Ответы на комментарии (replies)
+Добавить поле parentCommentId в Comment. Это реализует threaded discussions под каждым уроком.
+3. Репорт комментария
+POST /comments/{id}/report — студент жалуется, уходит в очередь для модерации. ADMIN получает email через уже готовый EmailProducer.
+4. Счётчик просмотров курса
+GET /courses/{id} → инкрементит счётчик в Redis (views:course:{id}). Персистится в MongoDB раз в 5 минут через @Scheduled.
+5. Курс "в избранном" (Bookmark)
+Студент сохраняет курсы для себя. Простая коллекция bookmarks в MongoDB. Отображается в профиле.
+6. Activity Feed
+Всё что происходит (лайк, комментарий, сертификат) → пишется в коллекцию activity_feed пользователя. Используется для страницы "Мои достижения".
+
+[7] ЧТО МОЖЕТ СЛОМАТЬСЯ
+
+SecurityUtils.hasRole() — нужно убедиться, что этот метод существует в твоём SecurityUtils, иначе добавить его.
+ForbiddenException — нужно проверить, что у тебя есть этот exception и он обрабатывается в GlobalExceptionHandler с кодом 403.
+Денормализация authorName — если пользователь изменит имя, старые комментарии останутся со старым именем. Это приемлемо для учебной платформы, но надо понимать этот trade-off.
+Redis счётчик при перезапуске — при потере Redis данных счётчик лайков сбросится и восстановится из MongoDB при первом запросе. Это нормально, но надо убедиться, что декремент не уйдёт в отрицательные значения (защита есть в коде).
+Compound index на likes — unique = true по userId + courseId гарантирует один лайк, но нужно убедиться, что MongoDB создаст этот индекс при старте (Spring Data делает это автоматически).

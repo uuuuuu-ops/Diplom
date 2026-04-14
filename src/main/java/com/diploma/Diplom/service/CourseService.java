@@ -70,8 +70,8 @@ public class CourseService {
         return courseRepository.save(course);
     }
 
-    public List<Course> getTeacherCourses(String teacherEmail) {
-        User user = getApprovedTeacher(teacherEmail);
+    public List<Course> getTeacherCourses(String userId) {
+        User user = getApprovedTeacher(userId);
         return courseRepository.findByTeacherId(user.getId());
     }
 
@@ -80,11 +80,11 @@ public class CourseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found: " + courseId));
     }
 
-    public Course updateCourse(String teacherEmail,
+    public Course updateCourse(String userId,
                                String courseId,
                                UpdateCourseRequest request,
                                MultipartFile thumbnailFile) {
-        User user = getApprovedTeacher(teacherEmail);
+        User user = getApprovedTeacher(userId);
 
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found: " + courseId));
@@ -111,8 +111,8 @@ public class CourseService {
         return courseRepository.save(course);
     }
 
-    public void deleteCourse(String teacherEmail, String courseId) {
-        User user = getApprovedTeacher(teacherEmail);
+    public void deleteCourse(String userId, String courseId) {
+        User user = getApprovedTeacher(userId);
 
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found: " + courseId));

@@ -32,6 +32,9 @@ public class SubscriptionController {
         this.subscriptionService = subscriptionService;
     }
 
+
+    
+
     @Operation(
             summary = "Get PayPal plan ID",
             description = "Returns PayPal plan ID configured in backend. Used for subscription creation.",

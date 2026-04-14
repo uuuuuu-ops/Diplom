@@ -1,4 +1,3 @@
-// PaymentException.java
 package com.diploma.Diplom.exception;
 
 public class PaymentException extends RuntimeException {

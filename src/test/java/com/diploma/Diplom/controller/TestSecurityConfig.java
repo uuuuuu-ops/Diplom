@@ -27,7 +27,6 @@ public class TestSecurityConfig {
                 .requestMatchers("/courses/public").permitAll()
                 .anyRequest().authenticated()
             );
-        // JWT-фильтр не добавляем — используем @WithMockUser / .with(user(...))
         return http.build();
     }
 }

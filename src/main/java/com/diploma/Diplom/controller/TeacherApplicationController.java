@@ -64,12 +64,11 @@ public class TeacherApplicationController {
             @Parameter(description = "Resume PDF file")
             @RequestParam("resumeFile") MultipartFile resumeFile
     ) {
-        // FIX: было principal.getName() (email) — теперь берём настоящий MongoDB _id
         User user = userRepository.findByEmail(principal.getName())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         TeacherApplicationRequest request = new TeacherApplicationRequest();
-        request.setUserId(user.getId()); // правильный _id, не email
+        request.setUserId(user.getId()); 
         request.setFullName(fullName);
         request.setEmail(email);
         request.setSpecialization(specialization);

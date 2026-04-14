@@ -46,7 +46,6 @@ public class LessonCommentService {
             if (!parent.getLessonId().equals(lessonId)) {
                 throw new BadRequestException("Parent comment does not belong to this lesson");
             }
-            // no nested replies — only one level of threading
             if (parent.getParentId() != null) {
                 throw new BadRequestException("Cannot reply to a reply");
             }
@@ -73,8 +72,8 @@ public class LessonCommentService {
     public List<LessonComment> getReplies(String parentId) {
         return commentRepository.findByParentIdOrderByCreatedAtAsc(parentId);
     }
-    public LessonComment markAsAnswer(String teacherEmail, String commentId) {
-        User teacher = userRepository.findByEmail(teacherEmail)
+    public LessonComment markAsAnswer(String userId, String commentId) {
+        User teacher = userRepository.findByEmail(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         LessonComment comment = commentRepository.findById(commentId)

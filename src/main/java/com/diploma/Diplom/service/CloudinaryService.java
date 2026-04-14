@@ -44,7 +44,6 @@ public class CloudinaryService {
         }
     }
 
-    // принимает publicId а не url
     public void deleteFile(String publicId) {
     if (publicId == null || publicId.isBlank()) return;
 

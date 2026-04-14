@@ -1,19 +1,18 @@
 package com.diploma.Diplom.auth;
 
 import com.diploma.Diplom.exception.*;
+import com.diploma.Diplom.messaging.EmailProducer;
 import com.diploma.Diplom.model.User;
-import com.diploma.Diplom.model.VerificationCode;
 import com.diploma.Diplom.repository.UserRepository;
-import com.diploma.Diplom.repository.VerificationCodeRepository;
 import com.diploma.Diplom.security.JwtService;
-import com.diploma.Diplom.service.EmailService;
+import com.diploma.Diplom.service.VerificationCodeRedisService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
 
 @Slf4j
 @Service
@@ -21,10 +20,10 @@ import java.time.LocalDateTime;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final VerificationCodeRepository verificationCodeRepository;
+    private final VerificationCodeRedisService verificationCodeRedisService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final EmailService emailService;
+    private final EmailProducer emailProducer;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -43,35 +42,16 @@ public class AuthService {
         userRepository.save(user);
 
         String code = generateCode();
-
-        verificationCodeRepository.findByEmail(request.getEmail())
-                .ifPresent(verificationCodeRepository::delete);
-
-        VerificationCode verificationCode = new VerificationCode();
-        verificationCode.setEmail(request.getEmail());
-        verificationCode.setCode(code);
-        verificationCode.setExpiresAt(LocalDateTime.now().plusMinutes(10));
-        verificationCodeRepository.save(verificationCode);
-
-        try {
-            emailService.sendVerificationEmail(request.getEmail(), code);
-        } catch (Exception e) {
-            log.error("Failed to send verification email to {}: {}", request.getEmail(), e.getMessage());
-            userRepository.delete(user);
-            verificationCodeRepository.delete(verificationCode);
-            throw new InternalServerException("Failed to send verification email. Please try again later.");
-        }
+        verificationCodeRedisService.save(request.getEmail(), code);
+        emailProducer.sendVerificationEmail(request.getEmail(), code);
 
         return new AuthResponse("Verification code sent to email");
     }
 
     public String verify(VerifyRequest request) {
-        VerificationCode verificationCode = verificationCodeRepository
-                .findByEmailAndCode(request.getEmail(), request.getCode())
-                .orElseThrow(() -> new UnauthorizedException("Invalid verification code"));
-
-        if (verificationCode.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new UnauthorizedException("Verification code expired");
+        boolean valid = verificationCodeRedisService.verify(request.getEmail(), request.getCode());
+        if(!valid){
+            throw new UnauthorizedException("Invalid verification Code");
         }
 
         User user = userRepository.findByEmail(request.getEmail())
@@ -80,8 +60,7 @@ public class AuthService {
         user.setEnabled(true);
         userRepository.save(user);
 
-        verificationCodeRepository.delete(verificationCode);
-
+        verificationCodeRedisService.delete(request.getEmail());
         return "Account verified successfully";
     }
 

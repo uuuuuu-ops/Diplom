@@ -23,24 +23,24 @@ public class LessonService {
     private final LessonRepository lessonRepository;
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
-    private final CloudinaryService cloudinaryService; // ← заменили
+    private final CloudinaryService cloudinaryService; 
 
     public LessonService(LessonRepository lessonRepository,
                          CourseRepository courseRepository,
                          UserRepository userRepository,
-                         CloudinaryService cloudinaryService) { // ← заменили
+                         CloudinaryService cloudinaryService) { 
         this.lessonRepository = lessonRepository;
         this.courseRepository = courseRepository;
         this.userRepository = userRepository;
         this.cloudinaryService = cloudinaryService;
     }
 
-    public Lesson addLessonToCourse(String teacherEmail,
+    public Lesson addLessonToCourse(String userId,
                                     String courseId,
                                     CreateLessonRequest request,
                                     MultipartFile videoFile,
                                     MultipartFile lecturePdfFile) {
-        User user = getApprovedTeacher(teacherEmail);
+        User user = getApprovedTeacher(userId);
 
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
@@ -92,12 +92,12 @@ public class LessonService {
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
     }
 
-    public Lesson updateLesson(String teacherEmail,
+    public Lesson updateLesson(String userId,
                                String lessonId,
                                UpdateLessonRequest request,
                                MultipartFile videoFile,
                                MultipartFile lecturePdfFile) {
-        User user = getApprovedTeacher(teacherEmail);
+        User user = getApprovedTeacher(userId);
 
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
@@ -138,8 +138,8 @@ public class LessonService {
         return lessonRepository.save(lesson);
     }
 
-    public void deleteLesson(String teacherEmail, String lessonId) {
-        User user = getApprovedTeacher(teacherEmail);
+    public void deleteLesson(String userId, String lessonId) {
+        User user = getApprovedTeacher(userId);
 
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
@@ -156,8 +156,8 @@ public class LessonService {
         lessonRepository.delete(lesson);
     }
 
-    private User getApprovedTeacher(String teacherEmail) {
-        User user = userRepository.findByEmail(teacherEmail)
+    private User getApprovedTeacher(String userId) {
+        User user = userRepository.findByEmail(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getRole() != Role.TEACHER) {
