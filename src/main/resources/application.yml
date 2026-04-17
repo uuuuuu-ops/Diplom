@@ -2,29 +2,34 @@ spring:
   application:
     name: Diplom
 
-  rabbitmq:
-    host: ${SPRING_RABBITMQ_HOST:localhost}
-    port: ${SPRING_RABBITMQ_PORT:5672}
-    username: ${SPRING_RABBITMQ_USERNAME}
-    password: ${SPRING_RABBITMQ_PASSWORD}
-
+  # =====================
+  # MONGODB (ATLAS)
+  # =====================
   data:
     mongodb:
-      uri: ${MONGODB_URI}
-
+      uri: ${SPRING_DATA_MONGODB_URI}
+    # =====================
+    # REDIS
+    # =====================
     redis:
-      host: localhost
-      port: 6379
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
 
   cache:
     type: redis
 
-  servlet:
-    multipart:
-      enabled: true
-      max-file-size: 500MB
-      max-request-size: 550MB
+  # =====================
+  # RABBITMQ
+  # =====================
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
 
+  # =====================
+  # MAIL (GMAIL SMTP)
+  # =====================
   mail:
     host: smtp.gmail.com
     port: 587
@@ -40,11 +45,26 @@ spring:
           ssl:
             trust: smtp.gmail.com
 
+  # =====================
+  # FILE UPLOAD
+  # =====================
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 500MB
+      max-request-size: 550MB
+
+  # =====================
+  # THYMELEAF
+  # =====================
   thymeleaf:
     prefix: classpath:/templates/
     suffix: .html
     mode: HTML
 
+# =====================
+# LOGGING
+# =====================
 logging:
   level:
     org.springframework.cache: DEBUG
@@ -52,30 +72,45 @@ logging:
     org.springframework.web: INFO
     com.diploma.Diplom: DEBUG
 
+# =====================
+# JWT
+# =====================
 jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION}
 
+# =====================
+# CLOUDINARY
+# =====================
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
 
+# =====================
+# PAYPAL
+# =====================
 paypal:
   client-id: ${PAYPAL_CLIENT_ID}
   client-secret: ${PAYPAL_CLIENT_SECRET}
-  base-url: https://api-m.sandbox.paypal.com
-  plan-id: P-58N535868G1027601NHFZDXQ
+  base-url: ${PAYPAL_BASE_URL:https://api-m.sandbox.paypal.com}
+  plan-id: ${PAYPAL_SUBSCRIPTION_PLAN_ID}
 
+# =====================
+# APP CONFIG
+# =====================
 app:
   upload:
-    dir: uploads
-  base-url: http://localhost:8080
+    dir: ${APP_UPLOAD_DIR:uploads}
+  base-url: ${APP_BASE_URL:http://localhost:8080}
   certificate:
     storage:
-      path: uploads/certificates
+      path: ${CERTIFICATE_STORAGE_PATH:uploads/certificates}
 
+# =====================
+# SWAGGER (SPRINGDOC)
+# =====================
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -92,21 +127,19 @@ springdoc:
   group-configs:
     - group: Authentication
       paths-to-match: /auth/**
-
     - group: Courses
       paths-to-match: /courses/**
-
     - group: Lessons
       paths-to-match: /lessons/**
-
     - group: Quizzes
       paths-to-match: /quizzes/**,/quiz-attempts/**
-
     - group: Progress & Certificates
       paths-to-match: /progress/**,/api/certificates/**
-
     - group: Enrollments & Payments
       paths-to-match: /enrollments/**,/payments/**,/subscriptions/**
-
     - group: Teacher Applications
       paths-to-match: /teacher-applications/**
+    - group: Comments
+      paths-to-match: /comments/**
+    - group: Profiles
+      paths-to-match: /profile/**

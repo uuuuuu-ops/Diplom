@@ -115,23 +115,25 @@ public class LessonService {
         if (request.getPublished() != null) lesson.setPublished(request.getPublished());
 
         if (videoFile != null && !videoFile.isEmpty()) {
-            if (lesson.getVideoUrl() != null) {
-                cloudinaryService.deleteFile(lesson.getVideoUrl());
+            if (lesson.getVideoPublicId() != null) {
+                cloudinaryService.deleteFile(lesson.getVideoPublicId());
             }
             CloudinaryService.FileUploadResult uploaded =
                     cloudinaryService.uploadFile(videoFile, "videos");
             lesson.setVideoUrl(uploaded.getFileUrl());
             lesson.setVideoFileName(uploaded.getFileName());
+            lesson.setVideoPublicId(uploaded.getPublicId());
         }
 
         if (lecturePdfFile != null && !lecturePdfFile.isEmpty()) {
-            if (lesson.getLecturePdfUrl() != null) {
-                cloudinaryService.deleteFile(lesson.getLecturePdfUrl());
+            if (lesson.getLecturePdfPublicId() != null) {
+                cloudinaryService.deleteFile(lesson.getLecturePdfPublicId());
             }
             CloudinaryService.FileUploadResult uploaded =
                     cloudinaryService.uploadFile(lecturePdfFile, "lecture-pdfs");
             lesson.setLecturePdfUrl(uploaded.getFileUrl());
             lesson.setLecturePdfFileName(uploaded.getFileName());
+            lesson.setLecturePdfPublicId(uploaded.getPublicId());
         }
 
         lesson.setUpdatedAt(LocalDateTime.now());
@@ -157,7 +159,7 @@ public class LessonService {
     }
 
     private User getApprovedTeacher(String userId) {
-        User user = userRepository.findByEmail(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getRole() != Role.TEACHER) {

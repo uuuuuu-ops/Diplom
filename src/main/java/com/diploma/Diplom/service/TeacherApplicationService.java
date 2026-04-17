@@ -41,11 +41,11 @@ public class TeacherApplicationService {
     }
 
     public TeacherApplication submitApplication(TeacherApplicationRequest request, MultipartFile resumeFile) {
-        String currentUserEmail = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
+        String userId = SecurityContextHolder.getContext()
+            .getAuthentication()
+            .getName();
 
-        User user = userRepository.findByEmail(currentUserEmail)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getRole() != Role.TEACHER) {
@@ -157,7 +157,7 @@ public class TeacherApplicationService {
     }
 
     public TeacherApplication getMyApplication(String userId) {
-        User user = userRepository.findByEmail(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getRole() != Role.TEACHER) {

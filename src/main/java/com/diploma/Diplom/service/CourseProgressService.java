@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.diploma.Diplom.exception.ForbiddenException;
 import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.messaging.CertificateProducer;
+import com.diploma.Diplom.model.ActivityType;
 import com.diploma.Diplom.model.CourseProgress;
 import com.diploma.Diplom.model.Lesson;
 import com.diploma.Diplom.model.Quiz;
@@ -26,6 +27,7 @@ public class CourseProgressService {
     private final QuizRepository quizRepository;
     private final CertificateRepository certificateRepository;
     private final CertificateProducer certificateProducer;
+    private final ActivityFeedService activityFeedService;
 
 
     public CourseProgressService(
@@ -33,7 +35,8 @@ public class CourseProgressService {
             LessonRepository lessonRepository,
             QuizRepository quizRepository,
             CertificateRepository certificateRepository,
-            CertificateProducer certificateProducer
+            CertificateProducer certificateProducer,
+            ActivityFeedService activityFeedService
 
     ) {
         this.courseProgressRepository = courseProgressRepository;
@@ -41,6 +44,7 @@ public class CourseProgressService {
         this.quizRepository = quizRepository;
         this.certificateRepository = certificateRepository;
         this.certificateProducer = certificateProducer;
+        this.activityFeedService = activityFeedService;
 
     }
 
@@ -71,7 +75,10 @@ public class CourseProgressService {
         progress.setLastUpdatedAt(LocalDateTime.now());
 
         recalculateProgress(progress);
-        return courseProgressRepository.save(progress);
+        CourseProgress saved = courseProgressRepository.save(progress);
+        activityFeedService.addActivity(userId, ActivityType.LESSON_COMPLETED, lessonId,
+                "Completed lesson: " + lesson.getTitle());
+        return saved;
     }
 
     public CourseProgress markQuizPassed(String userId, String courseId, String quizId) {

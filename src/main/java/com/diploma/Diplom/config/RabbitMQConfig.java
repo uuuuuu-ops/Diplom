@@ -28,6 +28,12 @@ public class RabbitMQConfig {
     public static final String EMAIL_DLQ       = "email.dlq";
     public static final String CERTIFICATE_DLQ = "certificate.dlq";
 
+    public static final String NOTIFICATION_QUEUE   = "notification.queue";
+    public static final String NOTIFICATION_EXCHANGE  = "notification.exchange";
+        
+    public static final String NOTIFICATION_ROUTING_KEY = "notification.comment";
+    public static final String NOTIFICATION_DLQ     = "notification.dlq";
+
     // --- Email ---
     @Bean
     public Queue emailQueue() {
@@ -97,4 +103,30 @@ public class RabbitMQConfig {
             .to(new DirectExchange(""))
             .with(EMAIL_DLQ);
     }
+
+    @Bean
+    public Queue notificationQueue() {
+        return QueueBuilder.durable(NOTIFICATION_QUEUE)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", NOTIFICATION_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Queue notificationDlq() {
+        return QueueBuilder.durable(NOTIFICATION_DLQ).build();
+    }
+
+    @Bean
+    public DirectExchange notificationExchange() {
+        return new DirectExchange(NOTIFICATION_EXCHANGE);
+    }
+
+    @Bean
+    public Binding notificationBinding(Queue notificationQueue, DirectExchange notificationExchange) {
+        return BindingBuilder.bind(notificationQueue)
+                .to(notificationExchange)
+                .with(NOTIFICATION_ROUTING_KEY);
+    }
+
 }

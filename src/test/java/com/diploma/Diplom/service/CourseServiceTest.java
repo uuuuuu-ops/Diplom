@@ -18,6 +18,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
@@ -38,8 +42,7 @@ class CourseServiceTest {
     @Mock UserRepository userRepository;
     @Mock CloudinaryService cloudinaryService;
 
-    @InjectMocks
-    CourseService courseService;
+    @InjectMocks CourseService courseService;
 
     private User approvedTeacher;
 
@@ -62,7 +65,6 @@ class CourseServiceTest {
         req.setFree(false);
         req.setPrice(new BigDecimal("29.99"));
 
-        // FIX: service.getApprovedTeacher uses findById(userId), not findByEmail
         when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(courseRepository.save(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -89,7 +91,7 @@ class CourseServiceTest {
     }
 
     @Test
-    @DisplayName("createCourse: платный курс без цены — выбрасывает BadRequestException")
+    @DisplayName("createCourse: платный курс без цены — BadRequestException")
     void createCourse_paidWithoutPrice_throws() {
         CreateCourseRequest req = new CreateCourseRequest();
         req.setTitle("Paid Course");
@@ -104,12 +106,11 @@ class CourseServiceTest {
     }
 
     @Test
-    @DisplayName("createCourse: пользователь не является преподавателем — ForbiddenException")
+    @DisplayName("createCourse: не преподаватель — ForbiddenException")
     void createCourse_notTeacher_throws() {
         User student = new User();
         student.setId("student-1");
         student.setRole(Role.STUDENT);
-
         when(userRepository.findById("student-1")).thenReturn(Optional.of(student));
 
         assertThatThrownBy(() -> courseService.createCourse("student-1", new CreateCourseRequest(), null))
@@ -198,7 +199,6 @@ class CourseServiceTest {
     @Test
     @DisplayName("updateCourse: курс не найден — ResourceNotFoundException")
     void updateCourse_courseNotFound_throws() {
-        // FIX: только нужные стабы — сначала юзер находится, потом курс — нет
         when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(courseRepository.findById("missing")).thenReturn(Optional.empty());
 
@@ -293,29 +293,57 @@ class CourseServiceTest {
     }
 
     // ─────────────────────── getPublicCourses ───────────────────────────
+    // ИСПРАВЛЕНО: getPublicCourses принимает (category, level, Pageable) и возвращает Page<Course>
 
     @Test
-    @DisplayName("getPublicCourses: возвращает только опубликованные курсы")
-    void getPublicCourses_returnsPublished() {
-        Course c1 = new Course(); c1.setPublished(true);
-        Course c2 = new Course(); c2.setPublished(true);
+    @DisplayName("getPublicCourses: без фильтров — возвращает страницу опубликованных курсов")
+    void getPublicCourses_noFilters_returnsPage() {
+        Course c1 = new Course(); c1.setPublished(true); c1.setTitle("Course A");
+        Course c2 = new Course(); c2.setPublished(true); c2.setTitle("Course B");
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<Course> page = new PageImpl<>(List.of(c1, c2), pageable, 2);
 
-        when(courseRepository.findByPublishedTrue()).thenReturn(List.of(c1, c2));
+        when(courseRepository.findByPublishedTrue(pageable)).thenReturn(page);
 
-        List<Course> result = courseService.getPublicCourses();
+        Page<Course> result = courseService.getPublicCourses(null, null, pageable);
 
-        assertThat(result).hasSize(2);
-        assertThat(result).allMatch(Course::isPublished);
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getTotalElements()).isEqualTo(2);
     }
 
     @Test
-    @DisplayName("getPublicCourses: нет опубликованных курсов — возвращает пустой список")
-    void getPublicCourses_empty() {
-        when(courseRepository.findByPublishedTrue()).thenReturn(Collections.emptyList());
+    @DisplayName("getPublicCourses: пустой результат — возвращает пустую страницу")
+    void getPublicCourses_empty_returnsEmptyPage() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(courseRepository.findByPublishedTrue(pageable)).thenReturn(Page.empty(pageable));
 
-        List<Course> result = courseService.getPublicCourses();
+        Page<Course> result = courseService.getPublicCourses(null, null, pageable);
 
-        assertThat(result).isEmpty();
+        assertThat(result.getContent()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("getPublicCourses: с фильтром по категории — вызывает findByPublishedTrueAndCategory")
+    void getPublicCourses_withCategory_usesCorrectMethod() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(courseRepository.findByPublishedTrueAndCategory("IT", pageable)).thenReturn(Page.empty(pageable));
+
+        courseService.getPublicCourses("IT", null, pageable);
+
+        verify(courseRepository).findByPublishedTrueAndCategory("IT", pageable);
+        verify(courseRepository, never()).findByPublishedTrue(any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("getPublicCourses: с категорией и уровнем — вызывает findByPublishedTrueAndCategoryAndLevel")
+    void getPublicCourses_withCategoryAndLevel_usesCorrectMethod() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(courseRepository.findByPublishedTrueAndCategoryAndLevel("IT", "BEGINNER", pageable))
+                .thenReturn(Page.empty(pageable));
+
+        courseService.getPublicCourses("IT", "BEGINNER", pageable);
+
+        verify(courseRepository).findByPublishedTrueAndCategoryAndLevel("IT", "BEGINNER", pageable);
     }
 
     // ─────────────────────── getTeacherCourses ────────────────────────────
@@ -341,9 +369,7 @@ class CourseServiceTest {
         when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(courseRepository.findByTeacherId("teacher-1")).thenReturn(Collections.emptyList());
 
-        List<Course> result = courseService.getTeacherCourses("teacher-1");
-
-        assertThat(result).isEmpty();
+        assertThat(courseService.getTeacherCourses("teacher-1")).isEmpty();
     }
 
     // ─────────────────────── getCourseById ────────────────────────────────

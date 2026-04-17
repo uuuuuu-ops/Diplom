@@ -13,6 +13,8 @@ import com.diploma.Diplom.repository.LessonRepository;
 import com.diploma.Diplom.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -127,8 +129,15 @@ public class CourseService {
         courseRepository.delete(course);
     }
 
-    public List<Course> getPublicCourses() {
-        return courseRepository.findByPublishedTrue();
+    public Page<Course> getPublicCourses(String category, String level, Pageable pageable) {
+        if (category != null && level != null) {
+            return courseRepository.findByPublishedTrueAndCategoryAndLevel(category, level, pageable);
+        } else if (category != null) {
+            return courseRepository.findByPublishedTrueAndCategory(category, pageable);
+        } else if (level != null) {
+            return courseRepository.findByPublishedTrueAndLevel(level, pageable);
+        }
+        return courseRepository.findByPublishedTrue(pageable);
     }
 
     private User getApprovedTeacher(String userId) {

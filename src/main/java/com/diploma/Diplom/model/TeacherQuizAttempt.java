@@ -42,7 +42,7 @@ public class TeacherQuizAttempt {
 
         private String questionId;
 
-        private int selectedIndex;
+        private Integer selectedIndex;
         
         private boolean correct;
     }

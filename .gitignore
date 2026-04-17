@@ -5,6 +5,8 @@ target/
 !**/src/test/**/target/
 .env
 .gitignore
+docker-compose.yml
+Dockerfile
 
 
 ### STS ###

@@ -39,4 +39,11 @@ public class User {
 
     @Schema(description = "Whether the teacher has been approved by an admin after passing the qualification quiz")
     private boolean teacherApproved;
+
+    @Schema(description = "Profile Image Url")
+    private String profileImageUrl;
+
+    @Schema(description = "Age of the user")
+    private Integer age;
+
 }

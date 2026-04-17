@@ -35,7 +35,7 @@ public class CertificateConsumer {
         } catch (Exception e) {
             log.error("Failed to generate certificate for userId={}, courseId={}: {}",
                     message.getUserId(), message.getCourseId(), e.getMessage());
-            throw e; // уйдёт в DLQ
+            throw e; 
         }
     }
 }

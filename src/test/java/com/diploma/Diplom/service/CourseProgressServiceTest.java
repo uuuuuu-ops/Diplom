@@ -32,9 +32,9 @@ class CourseProgressServiceTest {
     @Mock LessonRepository lessonRepository;
     @Mock QuizRepository quizRepository;
     @Mock CertificateRepository certificateRepository;
-
-    // 🔥 FIX: теперь это producer, а не service
     @Mock CertificateProducer certificateProducer;
+    // ИСПРАВЛЕНО: добавлен недостающий мок — CourseProgressService зависит от ActivityFeedService
+    @Mock ActivityFeedService activityFeedService;
 
     @InjectMocks
     CourseProgressService courseProgressService;
@@ -121,9 +121,7 @@ class CourseProgressServiceTest {
 
         courseProgressService.markLessonCompleted("user-1", "course-1", "lesson-1");
 
-        // 🔥 FIX: теперь проверяем RabbitMQ producer
-        verify(certificateProducer)
-                .requestCertificate("user-1", "course-1");
+        verify(certificateProducer).requestCertificate("user-1", "course-1");
     }
 
     @Test
@@ -140,8 +138,7 @@ class CourseProgressServiceTest {
 
         courseProgressService.markLessonCompleted("user-1", "course-1", "lesson-1");
 
-        verify(certificateProducer, never())
-                .requestCertificate(any(), any());
+        verify(certificateProducer, never()).requestCertificate(any(), any());
     }
 
     // ─────────────────────── markQuizPassed ──────────────────────────────
@@ -166,7 +163,6 @@ class CourseProgressServiceTest {
     @Test
     void isLessonUnlocked_firstLesson_alwaysTrue() {
         lesson.setOrderIndex(0);
-
         when(lessonRepository.findById("lesson-1")).thenReturn(Optional.of(lesson));
 
         boolean result =
