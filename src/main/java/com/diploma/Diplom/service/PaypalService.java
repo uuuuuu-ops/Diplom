@@ -6,6 +6,7 @@ import com.diploma.Diplom.exception.ConflictException;
 import com.diploma.Diplom.exception.PaymentException;
 import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.exception.UnauthorizedException;
+import com.diploma.Diplom.messaging.PaymentProducer;
 import com.diploma.Diplom.model.*;
 import com.diploma.Diplom.repository.CourseRepository;
 import com.diploma.Diplom.util.SecurityUtils;
@@ -26,6 +27,7 @@ public class PaypalService {
     private final EnrollmentService enrollmentService;
     private final PaypalTokenRedisCache tokenCache;
     private final SecurityUtils securityUtils;
+    private final PaymentProducer paymentProducer;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -34,13 +36,15 @@ public class PaypalService {
                          CourseRepository courseRepository,
                          EnrollmentService enrollmentService,
                          PaypalTokenRedisCache tokenCache,
-                         SecurityUtils securityUtils) {
+                         SecurityUtils securityUtils,
+                         PaymentProducer paymentProducer) {
         this.paypalProperties = paypalProperties;
         this.paymentService = paymentService;
         this.courseRepository = courseRepository;
         this.enrollmentService = enrollmentService;
         this.tokenCache = tokenCache;
         this.securityUtils = securityUtils;
+        this.paymentProducer = paymentProducer;
     }
 
     public CreatePaypalOrderResponse createCourseOrder(String courseId) {
@@ -107,7 +111,7 @@ public class PaypalService {
         Payment payment = paymentService.getByOrderId(orderId);
 
         if (!payment.getUserId().equals(userId)) {
-            throw new    UnauthorizedException("You do not have access to this payment");
+            throw new UnauthorizedException("You do not have access to this payment");
         }
 
         if (payment.getStatus() == PaymentStatus.CAPTURED) {
@@ -144,10 +148,13 @@ public class PaypalService {
         String captureId = extractCaptureId(responseBody);
         Payment captured = paymentService.markAsCaptured(orderId, captureId);
 
-        enrollmentService.activatePurchasedEnrollment(
+        // Async: enrollment + invoice email через RabbitMQ
+        paymentProducer.sendPaymentCaptured(
                 captured.getUserId(),
                 captured.getCourseId(),
-                captured.getId()
+                captured.getId(),
+                captured.getAmount(),
+                captured.getCurrency()
         );
 
         return captured;

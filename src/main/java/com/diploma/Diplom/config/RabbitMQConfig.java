@@ -28,11 +28,34 @@ public class RabbitMQConfig {
     public static final String EMAIL_DLQ       = "email.dlq";
     public static final String CERTIFICATE_DLQ = "certificate.dlq";
 
-    public static final String NOTIFICATION_QUEUE   = "notification.queue";
-    public static final String NOTIFICATION_EXCHANGE  = "notification.exchange";
-        
+    public static final String NOTIFICATION_QUEUE       = "notification.queue";
+    public static final String NOTIFICATION_EXCHANGE    = "notification.exchange";
     public static final String NOTIFICATION_ROUTING_KEY = "notification.comment";
-    public static final String NOTIFICATION_DLQ     = "notification.dlq";
+    public static final String NOTIFICATION_DLQ         = "notification.dlq";
+
+    // Payment
+    public static final String PAYMENT_QUEUE       = "payment.queue";
+    public static final String PAYMENT_EXCHANGE    = "payment.exchange";
+    public static final String PAYMENT_ROUTING_KEY = "payment.captured";
+    public static final String PAYMENT_DLQ         = "payment.dlq";
+
+    // Activity
+    public static final String ACTIVITY_QUEUE       = "activity.queue";
+    public static final String ACTIVITY_EXCHANGE    = "activity.exchange";
+    public static final String ACTIVITY_ROUTING_KEY = "activity.send";
+    public static final String ACTIVITY_DLQ         = "activity.dlq";
+
+    // Enrollment
+    public static final String ENROLLMENT_QUEUE       = "enrollment.queue";
+    public static final String ENROLLMENT_EXCHANGE    = "enrollment.exchange";
+    public static final String ENROLLMENT_ROUTING_KEY = "enrollment.created";
+    public static final String ENROLLMENT_DLQ         = "enrollment.dlq";
+
+    // Subscription
+    public static final String SUBSCRIPTION_QUEUE       = "subscription.queue";
+    public static final String SUBSCRIPTION_EXCHANGE    = "subscription.exchange";
+    public static final String SUBSCRIPTION_ROUTING_KEY = "subscription.event";
+    public static final String SUBSCRIPTION_DLQ         = "subscription.dlq";
 
     // --- Email ---
     @Bean
@@ -127,6 +150,102 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(notificationQueue)
                 .to(notificationExchange)
                 .with(NOTIFICATION_ROUTING_KEY);
+    }
+
+    // --- Payment ---
+    @Bean
+    public Queue paymentQueue() {
+        return QueueBuilder.durable(PAYMENT_QUEUE)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", PAYMENT_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Queue paymentDlq() {
+        return QueueBuilder.durable(PAYMENT_DLQ).build();
+    }
+
+    @Bean
+    public DirectExchange paymentExchange() {
+        return new DirectExchange(PAYMENT_EXCHANGE);
+    }
+
+    @Bean
+    public Binding paymentBinding(Queue paymentQueue, DirectExchange paymentExchange) {
+        return BindingBuilder.bind(paymentQueue).to(paymentExchange).with(PAYMENT_ROUTING_KEY);
+    }
+
+    // --- Activity ---
+    @Bean
+    public Queue activityQueue() {
+        return QueueBuilder.durable(ACTIVITY_QUEUE)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", ACTIVITY_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Queue activityDlq() {
+        return QueueBuilder.durable(ACTIVITY_DLQ).build();
+    }
+
+    @Bean
+    public DirectExchange activityExchange() {
+        return new DirectExchange(ACTIVITY_EXCHANGE);
+    }
+
+    @Bean
+    public Binding activityBinding(Queue activityQueue, DirectExchange activityExchange) {
+        return BindingBuilder.bind(activityQueue).to(activityExchange).with(ACTIVITY_ROUTING_KEY);
+    }
+
+    // --- Enrollment ---
+    @Bean
+    public Queue enrollmentQueue() {
+        return QueueBuilder.durable(ENROLLMENT_QUEUE)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", ENROLLMENT_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Queue enrollmentDlq() {
+        return QueueBuilder.durable(ENROLLMENT_DLQ).build();
+    }
+
+    @Bean
+    public DirectExchange enrollmentExchange() {
+        return new DirectExchange(ENROLLMENT_EXCHANGE);
+    }
+
+    @Bean
+    public Binding enrollmentBinding(Queue enrollmentQueue, DirectExchange enrollmentExchange) {
+        return BindingBuilder.bind(enrollmentQueue).to(enrollmentExchange).with(ENROLLMENT_ROUTING_KEY);
+    }
+
+    // --- Subscription ---
+    @Bean
+    public Queue subscriptionQueue() {
+        return QueueBuilder.durable(SUBSCRIPTION_QUEUE)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", SUBSCRIPTION_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Queue subscriptionDlq() {
+        return QueueBuilder.durable(SUBSCRIPTION_DLQ).build();
+    }
+
+    @Bean
+    public DirectExchange subscriptionExchange() {
+        return new DirectExchange(SUBSCRIPTION_EXCHANGE);
+    }
+
+    @Bean
+    public Binding subscriptionBinding(Queue subscriptionQueue, DirectExchange subscriptionExchange) {
+        return BindingBuilder.bind(subscriptionQueue).to(subscriptionExchange).with(SUBSCRIPTION_ROUTING_KEY);
     }
 
 }

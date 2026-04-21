@@ -1,6 +1,6 @@
 # 📚 LMS Diploma — Learning Management System
 
-> Дипломный проект: полнофункциональная платформа онлайн-обучения с поддержкой монетизации, ИИ-скрининга преподавателей и системой сертификатов.
+> Дипломный проект: полнофункциональная платформа онлайн-обучения с поддержкой монетизации, ИИ-скрининга преподавателей, асинхронной обработкой событий и системой сертификатов.
 
 ---
 
@@ -10,10 +10,13 @@
 - [Архитектура](#архитектура)
 - [Технологический стек](#технологический-стек)
 - [Модули системы](#модули-системы)
+- [Кеширование (Redis)](#кеширование-redis)
+- [Очереди сообщений (RabbitMQ)](#очереди-сообщений-rabbitmq)
 - [API — краткий справочник](#api--краткий-справочник)
 - [Запуск проекта](#запуск-проекта)
 - [ИИ-модуль: Resume Screener](#ии-модуль-resume-screener)
 - [Переменные окружения](#переменные-окружения)
+- [Тесты](#тесты)
 - [TODO — Будущая работа](#todo--будущая-работа)
 
 ---
@@ -30,6 +33,8 @@ LMS Diploma — REST-бэкенд системы управления обуче
 - Скрининг резюме преподавателей через ML-модель (Random Forest)
 - Генерация PDF-сертификатов по завершении курса с QR-кодом
 - Загрузка медиафайлов через Cloudinary
+- **Redis-кеширование** горячих данных (курсы, доступ, прогресс, рейтинги)
+- **RabbitMQ** для асинхронной обработки событий (email, сертификаты, запись на курс, платежи)
 - Полная документация Swagger / OpenAPI 3
 
 ---
@@ -37,27 +42,27 @@ LMS Diploma — REST-бэкенд системы управления обуче
 ## Архитектура
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   Frontend (React)                  │
-└───────────────────────┬─────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                   Frontend (React)                      │
+└───────────────────────┬─────────────────────────────────┘
                         │ HTTP / REST
-┌───────────────────────▼─────────────────────────────┐
-│           Spring Boot Backend  :8080                │
-│                                                     │
-│  controller/   service/   repository/               │
-│  model/        dto/        security/                │
-│  config/       exception/  util/                    │
-└──────┬──────────────────────────┬───────────────────┘
-       │ MongoDB                  │ HTTP
-┌──────▼──────┐          ┌────────▼────────┐
-│  MongoDB    │          │  FastAPI AI     │
-│  (NoSQL DB) │          │  Service :8000  │
-└─────────────┘          └─────────────────┘
-                                  │ joblib
-                         ┌────────▼────────┐
-                         │ resume_model.pkl│
-                         │ (Random Forest) │
-                         └─────────────────┘
+┌───────────────────────▼─────────────────────────────────┐
+│             Spring Boot Backend  :8080                  │
+│                                                         │
+│  controller/   service/    repository/                  │
+│  messaging/    config/     security/                    │
+│  model/        dto/        exception/   util/           │
+└──────┬─────────────┬──────────────┬──────────┬──────────┘
+       │ MongoDB     │ Redis        │ RabbitMQ │ HTTP
+┌──────▼──────┐ ┌────▼────┐ ┌──────▼──────┐ ┌─▼──────────────┐
+│  MongoDB    │ │  Redis  │ │  RabbitMQ   │ │ FastAPI AI     │
+│  (NoSQL DB) │ │  Cache  │ │  (queues)   │ │ Service :8000  │
+└─────────────┘ └─────────┘ └─────────────┘ └────────────────┘
+                                                     │ joblib
+                                            ┌────────▼────────┐
+                                            │ resume_model.pkl│
+                                            │ (Random Forest) │
+                                            └─────────────────┘
 ```
 
 ---
@@ -69,12 +74,15 @@ LMS Diploma — REST-бэкенд системы управления обуче
 | Backend | Java 17+, Spring Boot 3, Spring Security, Spring Data MongoDB |
 | Аутентификация | JWT (io.jsonwebtoken), BCrypt |
 | База данных | MongoDB |
+| Кеширование | Redis 7, Spring Cache (`@Cacheable`, `@CacheEvict`) |
+| Очереди | RabbitMQ 3, Spring AMQP (Direct Exchange + DLQ) |
 | Платежи | PayPal REST API (Orders + Subscriptions) |
 | Медиафайлы | Cloudinary |
 | Документация | SpringDoc OpenAPI 3 / Swagger UI |
 | Сертификаты | iText / PDF, QR-код (ZXing) |
 | ИИ-сервис | Python 3.10+, FastAPI, scikit-learn, joblib, pandas |
 | Email | Spring Mail (SMTP) |
+| Контейнеризация | Docker, Docker Compose |
 
 ---
 
@@ -86,18 +94,19 @@ LMS Diploma — REST-бэкенд системы управления обуче
 - `POST /auth/verify` — подтверждение email по 6-значному коду
 - `POST /auth/login` — получение JWT-токена
 
-Верификационные коды генерируются через `SecureRandom` и живут 10 минут. При сбое отправки email пользователь и код автоматически откатываются.
+Верификационные коды генерируются через `SecureRandom`, хранятся в **Redis** с TTL 10 минут. При сбое отправки email пользователь и код автоматически откатываются. Отправка письма происходит асинхронно через **RabbitMQ** (`email.queue`).
 
 ---
 
 ### 👨‍🏫 TeacherApplication — Заявки преподавателей
 
 Система двухэтапного отбора:
-1. Студент подаёт заявку с резюме
+1. Студент подаёт заявку с резюме (PDF)
 2. Резюме анализируется AI-сервисом (score, strengths, weaknesses)
 3. Квалификационный квиз от преподавателя
 4. Администратор принимает или отклоняет заявку
 5. При одобрении роль меняется на `TEACHER`, флаг `teacherApproved = true`
+6. Решение отправляется кандидату async через `teacher.notification.queue`
 
 ---
 
@@ -108,6 +117,7 @@ LMS Diploma — REST-бэкенд системы управления обуче
 - Загрузка превью-изображения через Cloudinary
 - Публикация/снятие курса с публикации
 - Средний рейтинг (`avgRating`, `ratingCount`) пересчитывается при каждой новой оценке
+- Кеширование: отдельный курс — TTL 10 мин, каталог — TTL 2 мин, инвалидация при обновлении/удалении
 
 ---
 
@@ -116,7 +126,7 @@ LMS Diploma — REST-бэкенд системы управления обуче
 - CRUD уроков внутри курса (только владелец курса)
 - Видео-контент, вложения, порядок уроков (`orderIndex`)
 - Прогресс по уроку: отметка завершения
-- Комментарии к урокам
+- Комментарии к урокам с уведомлением через `notification.queue`
 
 ---
 
@@ -134,15 +144,17 @@ LMS Diploma — REST-бэкенд системы управления обуче
 
 - **PayPal Orders** — разовая покупка курса
 - **PayPal Subscriptions** — периодические подписки на контент
-- `PaypalTokenCache` — кеш OAuth2-токена PayPal для минимизации запросов
-- Mock-платёж (для тестирования без реального PayPal)
-- Модели: `Payment`, `Subscription`, `PaymentStatus`, `SubscriptionStatus`, `SubscriptionType`
+- `PaypalTokenRedisCache` — кеш OAuth2-токена PayPal в Redis для минимизации запросов
+- После успешного платежа событие уходит в `payment.queue` → async активация enrollment + invoice email
+- При активации/отмене подписки уведомление уходит в `subscription.queue`
+- Модели: `Payment`, `Subscription`, `PaymentStatus`, `SubscriptionStatus`
 
 ---
 
 ### 🎓 Certificate — Сертификаты
 
-- Генерация PDF-сертификата по завершении курса
+- Автоматическая генерация PDF-сертификата по завершении курса
+- Запрос на генерацию уходит в `certificate.queue` (async)
 - Встроенный QR-код для верификации
 - Хранение метаданных (дата, курс, студент, уникальный UUID)
 
@@ -150,15 +162,60 @@ LMS Diploma — REST-бэкенд системы управления обуче
 
 ### 📊 Progress — Прогресс студента
 
-- `CourseProgress` — агрегированный прогресс по курсу
+- `CourseProgress` — агрегированный прогресс по курсу (кеш TTL 5 мин)
 - `LessonProgress` — прогресс по отдельным урокам
 - Автоматическое обновление при завершении урока
+- Запись в `ActivityFeed` происходит async через `activity.queue`
+
+---
+
+### 📰 ActivityFeed — Лента активности
+
+- Хранит события: завершение урока, закладки, полученные комментарии
+- Последние 20 записей кешируются в Redis (TTL 2 мин)
+- Запись событий — асинхронно через RabbitMQ, не блокирует HTTP-ответ
 
 ---
 
 ### 🤖 AI-модуль — Resume Screener
 
 Отдельный FastAPI-сервис для скрининга резюме кандидатов в преподаватели. Подробнее — в разделе [ИИ-модуль](#ии-модуль-resume-screener).
+
+---
+
+## Кеширование (Redis)
+
+| Кеш | Ключ | TTL | Инвалидация |
+|-----|------|-----|-------------|
+| `course` | `courseId` | 10 мин | `updateCourse`, `deleteCourse` |
+| `courses` | `pub:{category}:{level}:{page}:{size}` | 2 мин | `updateCourse`, `deleteCourse` |
+| `courseRating` | `courseId` | 10 мин | `rateOrUpdate`, `deleteRating` |
+| `access` | `userId:courseId` | 5 мин | `enrollFreeCourse`, `activatePurchasedEnrollment` |
+| `progress` | `userId:courseId` | 5 мин | `markLessonCompleted`, `markQuizPassed` |
+| `subscription` | `userId` | 3 мин | `activateSubscription`, `cancelSubscription` |
+| `activityFeed` | `userId` | 2 мин | `addActivity` |
+| `paypal:access_token` | фиксированный | TTL токена − 60 с | автоматически по истечении |
+| `verification:{email}` | email | 10 мин | после успешной верификации |
+| `likes:course:{courseId}` | courseId | 30 мин | при like/unlike |
+
+---
+
+## Очереди сообщений (RabbitMQ)
+
+Все очереди — **durable**, с **Dead Letter Queue (DLQ)** для неудачных сообщений. Тип exchange: `Direct`.
+
+| Очередь | Событие | Producer | Consumer |
+|---------|---------|----------|----------|
+| `email.queue` | Отправка email | `EmailProducer` | `EmailConsumer` |
+| `certificate.queue` | Генерация сертификата | `CertificateProducer` | `CertificateConsumer` |
+| `notification.queue` | Новый комментарий | `CommentNotificationProducer` | `CommentNotificationConsumer` |
+| `enrollment.queue` | Запись на курс | `EnrollmentProducer` | `EnrollmentConsumer` |
+| `payment.queue` | Платёж захвачен | `PaymentProducer` | `PaymentConsumer` |
+| `teacher.notification.queue` | Решение по заявке | `TeacherNotificationProducer` | `TeacherNotificationConsumer` |
+| `subscription.queue` | Активация/отмена подписки | `SubscriptionProducer` | `SubscriptionConsumer` |
+| `activity.queue` | Событие в ленту | `ActivityProducer` | `ActivityConsumer` |
+
+Каждая очередь имеет соответствующий DLQ: `email.dlq`, `certificate.dlq`, и т.д.
 
 ---
 
@@ -180,68 +237,30 @@ http://localhost:8080/swagger-ui/index.html
 | Префикс | Описание |
 |---------|----------|
 | `/auth/**` | Публичные: регистрация, верификация, логин |
-| `/api/courses/**` | Управление курсами |
-| `/api/lessons/**` | Управление уроками |
-| `/api/quiz/**` | Квизы студентов |
+| `/courses/**` | Управление курсами |
+| `/lessons/**` | Управление уроками |
+| `/quizzes/**` | Квизы студентов |
 | `/api/teacher-quiz/**` | Квалификационные квизы |
-| `/api/teacher-applications/**` | Заявки в преподаватели |
-| `/api/payments/**` | PayPal: разовые платежи |
-| `/api/subscriptions/**` | PayPal: подписки |
+| `/teacher-applications/**` | Заявки в преподаватели |
+| `/payments/paypal/**` | PayPal: разовые платежи |
+| `/subscriptions/paypal/**` | PayPal: подписки |
 | `/api/certificates/**` | Сертификаты |
-| `/api/progress/**` | Прогресс студента |
-| `/api/ratings/**` | Рейтинги курсов |
-| `/api/comments/**` | Комментарии к урокам |
-| `/api/files/**` | Загрузка файлов |
+| `/progress/**` | Прогресс студента |
+| `/courses/{id}/ratings/**` | Рейтинги курсов |
+| `/lessons/{id}/comments/**` | Комментарии к урокам |
+| `/enrollments/**` | Запись на курсы |
+| `/activity/**` | Лента активности |
+| `/bookmarks/**` | Закладки |
+| `/profile/**` | Профиль пользователя |
 
----
-## Эндпоинты 
----
+### Полный список эндпоинтов
 
-## Модули
-- **auth** — registration, login, verification
-- **security** — JWT service, JWT filter, security configuration
-- **controller** — public and protected REST endpoints
-- **service** — business logic layer
-- **repository** — Mongo repositories
-- **model** — domain entities and enums
-- **dto** — request/response objects
-- **config** — Mongo, Cloudinary, file storage and other configuration
-- **exception** — global exception handling
-- **util** — security helpers
-- **Ai** — separate FastAPI microservice for resume screening
-
----
-
-## Основные сущности
-
-- `User`
-- `Course`
-- `Lesson`
-- `Enrollment`
-- `Subscription`
-- `Payment`
-- `Quiz`
-- `QuizQuestion`
-- `QuizAttempt`
-- `TeacherApplication`
-- `TeacherQuizQuestion`
-- `TeacherQuizAttempt`
-- `CourseProgress`
-- `LessonComment`
-- `CourseRating`
-- `Certificate`
-- `VerificationCode`
-
----
-
-## Группы АПИ
-
-### Authentication
+#### Authentication
 - `POST /auth/register`
 - `POST /auth/verify`
 - `POST /auth/login`
 
-### Courses
+#### Courses
 - `POST /courses`
 - `GET /courses/my`
 - `GET /courses/{courseId}`
@@ -249,58 +268,57 @@ http://localhost:8080/swagger-ui/index.html
 - `DELETE /courses/{courseId}`
 - `GET /courses/public`
 
-### Lessons
+#### Lessons
 - `POST /lessons/course/{courseId}`
 - `GET /lessons/course/{courseId}`
 - `GET /lessons/{lessonId}`
 - `PUT /lessons/{lessonId}`
 - `DELETE /lessons/{lessonId}`
 
-### Enrollments
+#### Enrollments
 - `POST /enrollments/free/{courseId}`
 - `GET /enrollments/check/{courseId}`
 - `GET /enrollments/my`
 
-### PayPal Payments
+#### PayPal Payments
 - `POST /payments/paypal/orders/course/{courseId}`
 - `POST /payments/paypal/orders/capture`
 - `GET /payments/paypal/my`
 
-### PayPal Subscriptions
+#### PayPal Subscriptions
 - `GET /subscriptions/paypal/plan`
+- `POST /subscriptions/paypal/create`
 - `POST /subscriptions/paypal/confirm`
-- `POST /subscriptions/paypal/save-pending`
 - `GET /subscriptions/paypal/my`
 
-### Quizzes
+#### Quizzes
 - `POST /quizzes/lesson/{lessonId}`
 - `GET /quizzes/{quizId}`
 - `GET /quizzes/lesson/{lessonId}`
 - `PUT /quizzes/{quizId}`
 - `DELETE /quizzes/{quizId}`
 
-### Quiz Attempts
+#### Quiz Attempts
 - `POST /quiz-attempts/submit`
 - `GET /quiz-attempts/my`
 
-### Progress
+#### Progress
 - `POST /progress/complete`
 - `GET /progress`
 - `GET /progress/lesson-unlocked`
 
-### Lesson Comments
+#### Lesson Comments
 - `POST /lessons/{lessonId}/comments`
 - `GET /lessons/{lessonId}/comments`
-- `GET /lessons/{lessonId}/comments/{commentId}/replies`
 - `PATCH /lessons/{lessonId}/comments/{commentId}/mark-answer`
 - `DELETE /lessons/{lessonId}/comments/{commentId}`
 
-### Course Ratings
+#### Course Ratings
 - `POST /courses/{courseId}/ratings`
 - `GET /courses/{courseId}/ratings`
 - `DELETE /courses/{courseId}/ratings`
 
-### Teacher Applications
+#### Teacher Applications
 - `POST /teacher-applications`
 - `GET /teacher-applications`
 - `GET /teacher-applications/pending`
@@ -308,19 +326,20 @@ http://localhost:8080/swagger-ui/index.html
 - `POST /teacher-applications/{applicationId}/reject`
 - `GET /teacher-applications/{applicationId}/resume`
 
-### Teacher Quiz
+#### Teacher Quiz
 - `GET /api/teacher/quiz/{applicationId}/questions`
 - `POST /api/teacher/quiz/{applicationId}/submit`
 - `GET /api/teacher/quiz/{applicationId}/result`
 
-### Certificates
+#### Certificates
 - `POST /api/certificates/issue`
 - `POST /api/certificates/{id}/regenerate`
 - `GET /api/certificates/{id}`
 - `GET /api/certificates/verify/{verificationCode}`
 
+#### Activity Feed
+- `GET /activity`
 
----
 ---
 
 ## Запуск проекта
@@ -329,26 +348,48 @@ http://localhost:8080/swagger-ui/index.html
 
 - Java 17+
 - Maven 3.8+
-- MongoDB (локально или Atlas)
-- Python 3.10+ (для AI-сервиса)
+- Docker & Docker Compose (рекомендуется)
+- Python 3.10+ (для AI-сервиса без Docker)
 
-### Backend (Spring Boot)
+### 🐳 Через Docker Compose (рекомендуется)
 
 ```bash
 # Клонировать репозиторий
 git clone <repo-url>
 cd project
 
-# Настроить application.properties (см. раздел "Переменные окружения")
+# Создать .env на основе примера
+cp .env.example .env
+# Заполнить переменные (MongoDB URI, PayPal, Cloudinary и т.д.)
 
-# Собрать и запустить
+# Запустить всё одной командой
+docker-compose up --build
+```
+
+Docker Compose поднимает три контейнера:
+- **diplom-app** — Spring Boot бэкенд на порту `8080`
+- **redis** — Redis 7 на порту `6379`
+- **rabbitmq** — RabbitMQ 3 с management UI на портах `5672` и `15672`
+
+> RabbitMQ Management UI: `http://localhost:15672` (login: `guest` / `guest`)
+
+### Вручную (без Docker)
+
+```bash
+# 1. Запустить Redis
+redis-server
+
+# 2. Запустить RabbitMQ
+rabbitmq-server
+
+# 3. Собрать и запустить Spring Boot
 mvn spring-boot:run
 ```
 
 ### AI-сервис (FastAPI)
 
 ```bash
-cd Ai/
+cd src/main/java/com/diploma/Diplom/Ai/
 
 # Установить зависимости
 pip install fastapi uvicorn joblib scikit-learn pandas
@@ -410,38 +451,47 @@ uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 
 ## Переменные окружения
 
-### Spring Boot (`application.properties`)
+### Spring Boot (`.env`)
 
 ```properties
 # MongoDB
-spring.data.mongodb.uri=mongodb://localhost:27017/lms_db
+SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/lms_db
 
 # JWT
-jwt.secret=<минимум 256-бит ключ>
-jwt.expiration=86400000
+JWT_SECRET=<минимум 256-бит ключ>
+JWT_EXPIRATION=86400000
+JWT_REFRESH_EXPIRATION=604800000
 
 # Email (SMTP)
-spring.mail.host=smtp.gmail.com
-spring.mail.port=587
-spring.mail.username=your@email.com
-spring.mail.password=your_app_password
+SPRING_MAIL_USERNAME=your@email.com
+SPRING_MAIL_PASSWORD=your_app_password
 
 # Cloudinary
-cloudinary.cloud-name=...
-cloudinary.api-key=...
-cloudinary.api-secret=...
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
 
 # PayPal
-paypal.client-id=...
-paypal.client-secret=...
-paypal.base-url=https://api-m.sandbox.paypal.com
+PAYPAL_CLIENT_ID=...
+PAYPAL_CLIENT_SECRET=...
+PAYPAL_BASE_URL=https://api-m.sandbox.paypal.com
+PAYPAL_SUBSCRIPTION_PLAN_ID=...
+
+# Redis
+SPRING_DATA_REDIS_HOST=localhost
+SPRING_DATA_REDIS_PORT=6379
+
+# RabbitMQ
+SPRING_RABBITMQ_HOST=localhost
+SPRING_RABBITMQ_PORT=5672
+SPRING_RABBITMQ_USERNAME=guest
+SPRING_RABBITMQ_PASSWORD=guest
 
 # AI Service
-ai.service.url=http://localhost:8000
-ai.service.api-key=...
+AI_RESUME_API_URL=http://localhost:8000
 ```
 
-### AI-сервис (`.env` или системные переменные)
+### AI-сервис
 
 ```bash
 API_KEY=your_secret_api_key_here
@@ -449,182 +499,108 @@ API_KEY=your_secret_api_key_here
 
 ---
 
-# Тесты для Diplom Backend
+## Тесты
 
-## Структура файлов
-
-Поместите тестовые файлы в:
-```
-src/test/java/com/diploma/Diplom/
-├── auth/
-│   └── AuthServiceTest.java
-└── service/
-    ├── CourseServiceTest.java
-    └── EnrollmentAndQuizServiceTest.java  
-```
-
-## Зависимости в pom.xml
-
-Убедитесь, что в вашем `pom.xml` есть:
-
-```xml
-<dependencies>
-
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-test</artifactId>
-        <scope>test</scope>
-    </dependency>
-
-</dependencies>
-```
-
-`spring-boot-starter-test` уже включает в себя:
-- **JUnit 5** — фреймворк тестирования
-- **Mockito** — мокирование зависимостей
-- **AssertJ** — удобные assertion'ы (`assertThat(...)`)
-
-## Запуск тестов
+### Запуск
 
 ```bash
+# Все тесты
 mvn test
 
+# Один класс
 mvn test -Dtest=CourseServiceTest
 
+# Один метод
 mvn test -Dtest=CourseServiceTest#createCourse_paidWithoutPrice_throws
 ```
 
-## Что тестируется
+### Покрытие
 
-### AuthServiceTest (11 тестов)
-| Метод       | Тест-кейс                                             |
-|-------------|-------------------------------------------------------|
-| `register`  | Успешная регистрация                                  |
-| `register`  | Email уже занят → ConflictException                   |
-| `register`  | Ошибка отправки email → откат + InternalServerException |
-| `verify`    | Верный код → аккаунт включается                       |
-| `verify`    | Неверный код → UnauthorizedException                  |
-| `verify`    | Просроченный код → UnauthorizedException              |
-| `login`     | Успешный вход → токен + данные пользователя           |
-| `login`     | Аккаунт не подтверждён → ForbiddenException           |
-| `login`     | Неверный пароль → BadRequestException                 |
-| `login`     | Пользователь не найден → ResourceNotFoundException    |
+| Тест-класс | Кол-во тестов | Что проверяется |
+|------------|---------------|-----------------|
+| `AuthServiceTest` | 11 | Регистрация, верификация, логин |
+| `CourseServiceTest` | 12 | CRUD курсов, доступ, Cloudinary |
+| `EnrollmentServiceTest` | 6 | Доступ к курсу, запись |
+| `QuizServiceTest` | 8 | Создание/удаление квизов, валидация |
+| `CourseProgressServiceTest` | — | Прогресс, async activity, сертификаты |
+| `CourseRatingServiceTest` | — | Рейтинги, пересчёт среднего |
+| `BookmarkServiceTest` | — | Закладки, activity |
+| `LikeServiceTest` | — | Лайки, Redis-счётчик |
+| `VerificationCodeRedisServiceTest` | — | OTP в Redis, TTL, верификация |
+| `EmailProducerTest` | 3 | Отправка в RabbitMQ |
+| `ProfileServiceTest` | — | Профиль пользователя |
+| `QuizAttemptServiceTest` | — | Попытки квиза |
+| `RepositoryTest` | — | MongoDB-запросы |
+| `SecurityRoutesTest` | — | Защищённые/публичные маршруты |
+| `AuthControllerTest` | — | HTTP-уровень аутентификации |
+| `CourseControllerTest` | — | HTTP-уровень курсов |
 
-### CourseServiceTest (12 тестов)
-| Метод             | Тест-кейс                                         |
-|-------------------|---------------------------------------------------|
-| `createCourse`    | Платный курс с ценой                              |
-| `createCourse`    | Бесплатный курс → цена = 0                        |
-| `createCourse`    | Платный без цены → BadRequestException            |
-| `createCourse`    | Студент создаёт курс → ForbiddenException         |
-| `createCourse`    | Неподтверждённый учитель → ForbiddenException     |
-| `createCourse`    | С файлом превью → загрузка в Cloudinary           |
-| `updateCourse`    | Успешное обновление полей                         |
-| `updateCourse`    | Чужой курс → ForbiddenException                  |
-| `updateCourse`    | Курс не найден → ResourceNotFoundException        |
-| `deleteCourse`    | Удаляет курс + уроки                             |
-| `deleteCourse`    | С превью → удаляет из Cloudinary                 |
-| `getPublicCourses`| Возвращает только опубликованные                 |
+---
 
-### EnrollmentServiceTest (6 тестов)
-| Метод               | Тест-кейс                                       |
-|---------------------|-------------------------------------------------|
-| `hasAccess`         | Бесплатный курс → всегда true                   |
-| `hasAccess`         | Есть активная запись → true                     |
-| `hasAccess`         | Есть подписка → true                            |
-| `hasAccess`         | Нет ни записи, ни подписки → false              |
-| `enrollFreeCourse`  | Успешная запись                                 |
-| `enrollFreeCourse`  | Уже записан → возвращает существующую запись    |
-| `enrollFreeCourse`  | Платный курс → ForbiddenException               |
+## Основные сущности
 
-### QuizServiceTest (8 тестов)
-| Метод         | Тест-кейс                                            |
-|---------------|------------------------------------------------------|
-| `createQuiz`  | Успешное создание                                    |
-| `createQuiz`  | Квиз уже существует → BadRequestException            |
-| `createQuiz`  | Пустой список вопросов → BadRequestException         |
-| `createQuiz`  | Неверный индекс ответа → BadRequestException         |
-| `createQuiz`  | Один вариант ответа → BadRequestException            |
-| `createQuiz`  | Чужой курс → ForbiddenException                     |
-| `createQuiz`  | passingScore по умолчанию = 60                      |
-| `deleteQuiz`  | Успешное удаление                                    |
-| `deleteQuiz`  | Квиз не найден → ResourceNotFoundException           |
+- `User`
+- `Course`
+- `Lesson`
+- `Enrollment`
+- `Subscription`
+- `Payment`
+- `Quiz` / `QuizQuestion` / `QuizAttempt`
+- `TeacherApplication`
+- `TeacherQuizQuestion` / `TeacherQuizAttempt`
+- `CourseProgress` / `LessonProgress`
+- `Comment`
+- `CourseRating`
+- `Certificate`
+- `ActivityFeed`
+- `Bookmark`
+- `Like`
+
+---
 
 ## TODO — Будущая работа
 
-# Frontend (React / Next.js)
-Бэкенд полностью готов, но фронтенда нет вообще. Нужно:
+### Frontend (React / Next.js)
+Бэкенд полностью готов, фронтенд отсутствует. Необходимо:
+- Страницы авторизации (регистрация → верификация email → логин)
+- Каталог курсов с фильтрацией по категории, уровню, цене
+- Личный кабинет студента: мои курсы, прогресс, сертификаты
+- Кабинет преподавателя: создание/редактирование курсов, уроков, квизов
+- Панель администратора: заявки преподавателей, одобрение/отклонение
+- Интеграция PayPal Buttons SDK
+- Просмотрщик уроков с видеоплеером
 
-Страницы авторизации (регистрация → верификация email → логин)
-Каталог курсов с фильтрацией по категории, уровню, цене
-Личный кабинет студента: мои курсы, прогресс, сертификаты
-Кабинет преподавателя: создание/редактирование курсов, уроков, квизов
-Панель администратора: заявки преподавателей, одобрение/отклонение
-Интеграция PayPal Buttons SDK (для оформления платежей и подписок)
-Просмотрщик уроков с видеоплеером
+### Роль ADMIN
+- `AdminController` с эндпоинтами для управления пользователями
+- Просмотр и обработка заявок `TeacherApplication` в статусе `PENDING`
+- Управление публикацией курсов
 
+### Продакшен-конфигурация
+- Заменить `allowedOriginPatterns(*)` в `SecurityConfig` на конкретные домены
+- Настроить реальные PayPal credentials (сейчас sandbox)
+- Добавить rate limiting на эндпоинты аутентификации (защита от brute-force)
+- Настроить HTTPS / SSL
+- Redis Cluster / Sentinel для отказоустойчивости
 
-# Docker / Docker Compose
-Сейчас проект запускается вручную тремя отдельными командами (Spring Boot, FastAPI, MongoDB). Нужно:
+### AI-сервис — улучшения
+- Добавить `Dockerfile` и переменные окружения в `docker-compose`
+- Расширить набор признаков модели (сейчас 6 фич — мало для продакшена)
+- Добавить логирование запросов к `/analyze` для мониторинга
+- Написать тесты для API с mock-моделью
 
-Dockerfile для Spring Boot
-Dockerfile для FastAPI AI-сервиса
-docker-compose.yml объединяющий: backend + AI + MongoDB
-.env.example с описанием всех переменных
+### Мониторинг и логирование
+- Добавить структурированное логирование (JSON-формат для продакшена)
+- Настроить алерты на DLQ (Dead Letter Queue) в RabbitMQ
+- Подключить метрики (Spring Actuator + Prometheus/Grafana)
+- Настроить алерты на критические ошибки (email или Slack)
 
-
-# Роль ADMIN и панель управления
-В коде упоминается роль ADMIN и логика одобрения преподавателей, но контроллера и сервиса для администратора нет. Нужно:
-
-AdminController с эндпоинтами для управления пользователями
-Просмотр всех заявок (TeacherApplication) в статусе PENDING
-Одобрение / отклонение с сохранением комментария
-Управление публикацией курсов (возможность снятия с публикации)
-
-
-# Тесты
-Тестов в проекте нет совсем. Критически важно:
-
-Unit-тесты для AuthService, EnrollmentService, CourseProgressService
-Integration-тесты для PayPal-флоу (с mock PayPal API)
-Тест на data leakage для AI-модели (уже исправлен recruiter_hire, но нужна регрессия)
-API-тесты через MockMvc для основных контроллеров
-
-
-# Конфигурация продакшена
-
-Заменить allowedOriginPatterns(List.of("*")) в SecurityConfig на конкретные домены
-Настроить реальные PayPal credentials (сейчас sandbox)
-Добавить rate limiting на эндпоинты аутентификации (защита от brute-force)
-Настроить HTTPS / SSL
-
-
-# AI-сервис — улучшения
-
-Добавить Dockerfile и переменные окружения для продакшена
-Расширить набор признаков модели (сейчас только 6 фич — слабо для реального скрининга)
-Добавить логирование запросов к /analyze для мониторинга
-Написать тесты для API с mock-моделью
-
-
-# Обработка ошибок и логирование
-
-GlobalExceptionHandler уже есть, но не все исключения покрыты единообразно
-Добавить структурированное логирование (JSON logs для продакшена)
-Настроить алерты на критические ошибки (email или Slack)
-
-
-# Документация API
-
-Добавить @Operation и @ApiResponse аннотации ко всем контроллерам (сейчас только у части)
-Описать все DTO через @Schema
-Добавить примеры запросов/ответов в Swagge
+### Документация API
+- Добавить `@Operation` и `@ApiResponse` ко всем контроллерам
+- Описать все DTO через `@Schema`
+- Добавить примеры запросов/ответов в Swagger
 
 ---
 
 ## 📄 Лицензия
 
 Дипломный проект. Все права защищены.
-
----
-

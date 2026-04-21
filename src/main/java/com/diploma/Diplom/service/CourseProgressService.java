@@ -5,10 +5,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.diploma.Diplom.exception.ForbiddenException;
 import com.diploma.Diplom.exception.ResourceNotFoundException;
+import com.diploma.Diplom.messaging.ActivityProducer;
 import com.diploma.Diplom.messaging.CertificateProducer;
 import com.diploma.Diplom.model.ActivityType;
 import com.diploma.Diplom.model.CourseProgress;
@@ -27,8 +30,7 @@ public class CourseProgressService {
     private final QuizRepository quizRepository;
     private final CertificateRepository certificateRepository;
     private final CertificateProducer certificateProducer;
-    private final ActivityFeedService activityFeedService;
-
+    private final ActivityProducer activityProducer;
 
     public CourseProgressService(
             CourseProgressRepository courseProgressRepository,
@@ -36,24 +38,17 @@ public class CourseProgressService {
             QuizRepository quizRepository,
             CertificateRepository certificateRepository,
             CertificateProducer certificateProducer,
-            ActivityFeedService activityFeedService
-
+            ActivityProducer activityProducer
     ) {
         this.courseProgressRepository = courseProgressRepository;
         this.lessonRepository = lessonRepository;
         this.quizRepository = quizRepository;
         this.certificateRepository = certificateRepository;
         this.certificateProducer = certificateProducer;
-        this.activityFeedService = activityFeedService;
-
+        this.activityProducer = activityProducer;
     }
 
-    /**
-     * Mark a lesson as complete for a student.
-     *
-     * If the lesson has quizRequired=true, the student must have already
-     * passed the associated quiz. Throws if the requirement is not met.
-     */
+    @CacheEvict(value = "progress", key = "#userId + ':' + #courseId")
     public CourseProgress markLessonCompleted(String userId, String courseId, String lessonId) {
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
@@ -76,11 +71,19 @@ public class CourseProgressService {
 
         recalculateProgress(progress);
         CourseProgress saved = courseProgressRepository.save(progress);
-        activityFeedService.addActivity(userId, ActivityType.LESSON_COMPLETED, lessonId,
-                "Completed lesson: " + lesson.getTitle());
+
+        // Async activity via RabbitMQ — не блокирует HTTP-ответ
+        activityProducer.sendActivity(
+                userId,
+                ActivityType.LESSON_COMPLETED.name(),
+                lessonId,
+                "Completed lesson: " + lesson.getTitle()
+        );
+
         return saved;
     }
 
+    @CacheEvict(value = "progress", key = "#userId + ':' + #courseId")
     public CourseProgress markQuizPassed(String userId, String courseId, String quizId) {
         CourseProgress progress = getOrCreateProgress(userId, courseId);
         progress.getPassedQuizIds().add(quizId);
@@ -90,12 +93,6 @@ public class CourseProgressService {
         return courseProgressRepository.save(progress);
     }
 
-    /**
-     * Returns true if the student can access the given lesson.
-     *
-     * A lesson is accessible when all lessons with a lower orderIndex
-     * (that are published) have been completed (and their quizzes passed if required).
-     */
     public boolean isLessonUnlocked(String userId, String courseId, String lessonId) {
         Lesson target = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
@@ -132,6 +129,7 @@ public class CourseProgressService {
         return getProgress(userId, lesson.getCourseId());
     }
 
+    @Cacheable(value = "progress", key = "#userId + ':' + #courseId")
     public CourseProgress getProgress(String userId, String courseId) {
         return getOrCreateProgress(userId, courseId);
     }

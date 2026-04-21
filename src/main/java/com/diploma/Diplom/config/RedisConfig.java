@@ -1,10 +1,21 @@
 package com.diploma.Diplom.config;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+
+import java.time.Duration;
 
 @Configuration
 public class RedisConfig {
@@ -18,5 +29,57 @@ public class RedisConfig {
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new StringRedisSerializer());
         return template;
+    }
+
+    @Bean
+    public ObjectMapper redisObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        mapper.activateDefaultTyping(
+                LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY
+        );
+        return mapper;
+    }
+
+    @Bean
+    public RedisCacheManager cacheManager(RedisConnectionFactory factory,
+                                          ObjectMapper redisObjectMapper) {
+        GenericJackson2JsonRedisSerializer jsonSerializer =
+                new GenericJackson2JsonRedisSerializer(redisObjectMapper);
+
+        RedisCacheConfiguration defaults = RedisCacheConfiguration.defaultCacheConfig()
+                .serializeKeysWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
+                .disableCachingNullValues();
+
+        return RedisCacheManager.builder(factory)
+                .cacheDefaults(defaults)
+                // Отдельный курс по ID
+                .withCacheConfiguration("course",
+                        defaults.entryTtl(Duration.ofMinutes(10)))
+                // Публичный каталог с фильтрами
+                .withCacheConfiguration("courses",
+                        defaults.entryTtl(Duration.ofMinutes(2)))
+                // Рейтинги курса
+                .withCacheConfiguration("courseRating",
+                        defaults.entryTtl(Duration.ofMinutes(10)))
+                // Доступ пользователя к курсу
+                .withCacheConfiguration("access",
+                        defaults.entryTtl(Duration.ofMinutes(5)))
+                // Лента активности пользователя
+                .withCacheConfiguration("activityFeed",
+                        defaults.entryTtl(Duration.ofMinutes(2)))
+                // Прогресс пользователя по курсу
+                .withCacheConfiguration("progress",
+                        defaults.entryTtl(Duration.ofMinutes(5)))
+                // Факт наличия активной подписки
+                .withCacheConfiguration("subscription",
+                        defaults.entryTtl(Duration.ofMinutes(3)))
+                .build();
     }
 }

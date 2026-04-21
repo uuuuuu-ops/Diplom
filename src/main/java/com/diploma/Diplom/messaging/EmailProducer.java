@@ -1,7 +1,6 @@
 package com.diploma.Diplom.messaging;
 
 import com.diploma.Diplom.config.RabbitMQConfig;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -15,16 +14,16 @@ public class EmailProducer {
     private final RabbitTemplate rabbitTemplate;
 
     public void sendVerificationEmail(String to, String code) {
-        EmailMessage message = new EmailMessage(
-                to,
-                "Account Verification",
-                "Your verification code: " + code
-        );
+        sendEmail(to, "Account Verification", "Your verification code: " + code);
+    }
+
+    public void sendEmail(String to, String subject, String body) {
+        EmailMessage message = new EmailMessage(to, subject, body);
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.EMAIL_EXCHANGE,
                 RabbitMQConfig.EMAIL_ROUTING_KEY,
                 message
         );
-        log.info("Queued verification email for: {}", to);
+        log.info("Queued email to={} subject={}", to, subject);
     }
 }
