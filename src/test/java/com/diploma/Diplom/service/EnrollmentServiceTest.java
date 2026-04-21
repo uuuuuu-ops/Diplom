@@ -24,6 +24,7 @@ class EnrollmentServiceTest {
     @Mock EnrollmentRepository enrollmentRepository;
     @Mock CourseRepository courseRepository;
     @Mock SubscriptionService subscriptionService;
+    @Mock com.diploma.Diplom.messaging.EnrollmentProducer enrollmentProducer;
     @Mock SecurityUtils securityUtils;
 
     @InjectMocks
@@ -99,6 +100,7 @@ class EnrollmentServiceTest {
 
         assertThat(result.getAccessType()).isEqualTo(AccessType.FREE);
         assertThat(result.getStatus()).isEqualTo(EnrollmentStatus.ACTIVE);
+        verify(enrollmentProducer).sendEnrollmentEvent("user-1", "course-1", AccessType.FREE.name());
     }
 
     @Test
@@ -122,6 +124,8 @@ class EnrollmentServiceTest {
 
         assertThat(result).isSameAs(existing);
         verify(enrollmentRepository, never()).save(any());
+        // event still sent even when enrollment already existed
+        verify(enrollmentProducer).sendEnrollmentEvent("user-1", "course-1", AccessType.FREE.name());
     }
 
     @Test
@@ -148,5 +152,3 @@ class EnrollmentServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 }
-
-

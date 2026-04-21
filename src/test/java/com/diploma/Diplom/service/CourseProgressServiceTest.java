@@ -3,6 +3,7 @@ package com.diploma.Diplom.service;
 import com.diploma.Diplom.exception.ForbiddenException;
 import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.messaging.CertificateProducer;
+import com.diploma.Diplom.messaging.ActivityProducer;
 import com.diploma.Diplom.model.CourseProgress;
 import com.diploma.Diplom.model.Lesson;
 import com.diploma.Diplom.model.Quiz;
@@ -33,8 +34,7 @@ class CourseProgressServiceTest {
     @Mock QuizRepository quizRepository;
     @Mock CertificateRepository certificateRepository;
     @Mock CertificateProducer certificateProducer;
-    // ИСПРАВЛЕНО: добавлен недостающий мок — CourseProgressService зависит от ActivityFeedService
-    @Mock ActivityFeedService activityFeedService;
+    @Mock com.diploma.Diplom.messaging.ActivityProducer activityProducer;
 
     @InjectMocks
     CourseProgressService courseProgressService;
