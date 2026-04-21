@@ -1,206 +1,108 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8"/>
-    <title>Certificate</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<div style="background: linear-gradient(135deg, #0f0c29, #1a1a4e, #24243e); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px; font-family: var(--font-sans);">
 
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: #f3f4f6;
-            font-family: 'Inter', sans-serif;
-        }
+  <div style="position: relative; width: 760px; background: #0d0d2b; border-radius: 20px; overflow: hidden;">
 
-        .certificate {
-            width: 1000px;
-            margin: 40px auto;
-            background: #ffffff;
-            padding: 70px 80px;
-            position: relative;
-            border: 2px solid #d4af37;
-        }
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #c9a84c, #f0d080, #c9a84c);"></div>
 
-        /* декоративная рамка */
-        .certificate::before {
-            content: "";
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            right: 15px;
-            bottom: 15px;
-            border: 1px solid #d4af37;
-        }
+    <div style="position: absolute; top: 24px; left: 24px; width: 60px; height: 60px; border-top: 1.5px solid #c9a84c; border-left: 1.5px solid #c9a84c; border-radius: 4px 0 0 0; opacity: 0.7;"></div>
+    <div style="position: absolute; top: 24px; right: 24px; width: 60px; height: 60px; border-top: 1.5px solid #c9a84c; border-right: 1.5px solid #c9a84c; border-radius: 0 4px 0 0; opacity: 0.7;"></div>
+    <div style="position: absolute; bottom: 24px; left: 24px; width: 60px; height: 60px; border-bottom: 1.5px solid #c9a84c; border-left: 1.5px solid #c9a84c; border-radius: 0 0 0 4px; opacity: 0.7;"></div>
+    <div style="position: absolute; bottom: 24px; right: 24px; width: 60px; height: 60px; border-bottom: 1.5px solid #c9a84c; border-right: 1.5px solid #c9a84c; border-radius: 0 0 4px 0; opacity: 0.7;"></div>
 
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
+    <div style="position: absolute; inset: 0; background: radial-gradient(ellipse at 15% 50%, rgba(201,168,76,0.06) 0%, transparent 60%), radial-gradient(ellipse at 85% 50%, rgba(100,120,255,0.06) 0%, transparent 60%); pointer-events: none;"></div>
 
-        .title {
-            font-family: 'Playfair Display', serif;
-            font-size: 44px;
-            font-weight: 700;
-            color: #111827;
-            letter-spacing: 1px;
-        }
+    <div style="padding: 56px 64px; position: relative; z-index: 1;">
 
-        .subtitle {
-            margin-top: 10px;
-            font-size: 16px;
-            color: #6b7280;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
+      <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 44px;">
+        <div style="width: 36px; height: 36px; position: relative; flex-shrink: 0;">
+          <svg viewBox="0 0 36 36" style="width: 36px; height: 36px;">
+            <polygon points="18,2 22,13 34,13 24,20 28,32 18,25 8,32 12,20 2,13 14,13" fill="none" stroke="#c9a84c" stroke-width="1.5"/>
+            <circle cx="18" cy="18" r="5" fill="none" stroke="#c9a84c" stroke-width="1"/>
+          </svg>
+        </div>
+        <div style="flex: 1; height: 1px; background: linear-gradient(90deg, rgba(201,168,76,0.5), transparent);"></div>
+        <div style="font-size: 11px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; font-weight: 500;">Certificate of Completion</div>
+        <div style="flex: 1; height: 1px; background: linear-gradient(270deg, rgba(201,168,76,0.5), transparent);"></div>
+        <div style="width: 36px; height: 36px; flex-shrink: 0;">
+          <svg viewBox="0 0 36 36" style="width: 36px; height: 36px;">
+            <polygon points="18,2 22,13 34,13 24,20 28,32 18,25 8,32 12,20 2,13 14,13" fill="none" stroke="#c9a84c" stroke-width="1.5"/>
+            <circle cx="18" cy="18" r="5" fill="none" stroke="#c9a84c" stroke-width="1"/>
+          </svg>
+        </div>
+      </div>
 
-        .name {
-            font-family: 'Playfair Display', serif;
-            font-size: 38px;
-            margin: 40px 0;
-            font-weight: 600;
-            text-align: center;
-            color: #111827;
-            border-bottom: 2px solid #d4af37;
-            display: inline-block;
-            padding-bottom: 10px;
-        }
+      <div style="text-align: center; margin-bottom: 36px;">
+        <div style="font-size: 13px; color: #8888bb; letter-spacing: 1px; margin-bottom: 18px;">This is to certify that</div>
+        <div style="font-size: 48px; font-weight: 500; color: #f5f0e0; letter-spacing: -0.5px; line-height: 1.1; font-family: var(--font-serif);" th:text="${studentName}">Aliya Bekova</div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 10px;">
+          <div style="height: 1px; width: 80px; background: rgba(201,168,76,0.4);"></div>
+          <svg viewBox="0 0 16 16" style="width: 14px; height: 14px;"><circle cx="8" cy="8" r="3" fill="#c9a84c"/><circle cx="8" cy="8" r="6" fill="none" stroke="#c9a84c" stroke-width="0.8" stroke-dasharray="2 2"/></svg>
+          <div style="height: 1px; width: 80px; background: rgba(201,168,76,0.4);"></div>
+        </div>
+      </div>
 
-        .center {
-            text-align: center;
-        }
+      <div style="text-align: center; margin-bottom: 48px;">
+        <div style="font-size: 13px; color: #8888bb; margin-bottom: 12px;">has successfully completed</div>
+        <div style="display: inline-block; background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.25); border-radius: 10px; padding: 14px 32px;">
+          <div style="font-size: 22px; font-weight: 500; color: #e8d898;" th:text="${courseTitle}">Advanced Machine Learning & Neural Networks</div>
+        </div>
+      </div>
 
-        .course {
-            font-size: 24px;
-            margin-top: 20px;
-            color: #374151;
-        }
+      <div style="display: grid; grid-template-columns: 1fr 1px 1fr 1px 1fr; gap: 0; margin-bottom: 48px;">
+        <div style="text-align: center; padding: 0 20px;">
+          <div style="font-size: 11px; letter-spacing: 2px; color: #c9a84c; text-transform: uppercase; margin-bottom: 8px;">Instructor</div>
+          <div style="font-size: 15px; color: #e0deff; font-weight: 500;" th:text="${instructorName}">Dr. Nurlan Akhmet</div>
+        </div>
+        <div style="background: rgba(201,168,76,0.2);"></div>
+        <div style="text-align: center; padding: 0 20px;">
+          <div style="font-size: 11px; letter-spacing: 2px; color: #c9a84c; text-transform: uppercase; margin-bottom: 8px;">Issued</div>
+          <div style="font-size: 15px; color: #e0deff; font-weight: 500;" th:text="${issuedAt}">April 21, 2026</div>
+        </div>
+        <div style="background: rgba(201,168,76,0.2);"></div>
+        <div style="text-align: center; padding: 0 20px;">
+          <div style="font-size: 11px; letter-spacing: 2px; color: #c9a84c; text-transform: uppercase; margin-bottom: 8px;">Certificate no.</div>
+          <div style="font-size: 15px; color: #e0deff; font-weight: 500; font-family: var(--font-mono);" th:text="${certificateNumber}">CERT-2026-0042</div>
+        </div>
+      </div>
 
-        .details {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 60px;
-            font-size: 15px;
-            color: #374151;
-        }
+      <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="width: 180px; height: 1px; background: rgba(255,255,255,0.25);"></div>
+          <div style="font-size: 12px; color: #8888bb;">Instructor Signature</div>
+        </div>
 
-        .left, .right {
-            width: 45%;
-        }
+        <div style="text-align: center;">
+          <div style="width: 72px; height: 72px; background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.3); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px;">
+            <svg viewBox="0 0 40 40" style="width: 40px; height: 40px; opacity: 0.7;">
+              <rect x="2" y="2" width="8" height="8" fill="#c9a84c"/>
+              <rect x="14" y="2" width="4" height="4" fill="#c9a84c"/>
+              <rect x="20" y="2" width="8" height="8" fill="#c9a84c"/>
+              <rect x="30" y="2" width="8" height="8" fill="#c9a84c"/>
+              <rect x="2" y="14" width="4" height="4" fill="#c9a84c"/>
+              <rect x="2" y="20" width="8" height="8" fill="#c9a84c"/>
+              <rect x="14" y="14" width="8" height="8" fill="#c9a84c"/>
+              <rect x="26" y="14" width="4" height="4" fill="#c9a84c"/>
+              <rect x="32" y="20" width="6" height="4" fill="#c9a84c"/>
+              <rect x="20" y="20" width="4" height="8" fill="#c9a84c"/>
+              <rect x="2" y="30" width="8" height="8" fill="#c9a84c"/>
+              <rect x="14" y="26" width="4" height="12" fill="#c9a84c"/>
+              <rect x="22" y="30" width="4" height="4" fill="#c9a84c"/>
+              <rect x="30" y="28" width="8" height="10" fill="#c9a84c"/>
+            </svg>
+          </div>
+          <div style="font-size: 10px; color: #666688; letter-spacing: 1px;">Scan to verify</div>
+        </div>
 
-        .row {
-            margin-bottom: 12px;
-        }
+        <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+          <div style="font-size: 10px; letter-spacing: 1px; color: #8888bb; font-family: var(--font-mono);" th:text="${verificationCode}">ABC123XYZ</div>
+          <div style="font-size: 10px; color: #555577; font-family: var(--font-mono);" th:text="${verificationUrl}">verify.edu/cert/ABC123</div>
+        </div>
+      </div>
 
-        .label {
-            color: #6b7280;
-        }
-
-        .value {
-            font-weight: 500;
-            color: #111827;
-        }
-
-        .bottom {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-top: 60px;
-        }
-
-        .signature {
-            text-align: center;
-        }
-
-        .sign-line {
-            width: 220px;
-            border-top: 1px solid #111;
-            margin-bottom: 8px;
-        }
-
-        .qr img {
-            width: 110px;
-            height: 110px;
-        }
-
-        .verify {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 13px;
-            color: #6b7280;
-        }
-
-    </style>
-</head>
-<body>
-
-<div class="certificate">
-
-    <div class="header">
-        <div class="title">Certificate</div>
-        <div class="subtitle">of completion</div>
     </div>
 
-    <div class="center">
-        <div>This is to certify that</div>
-
-        <div class="name" th:text="${studentName}">
-            Student Name
-        </div>
-
-        <div>has successfully completed the course</div>
-
-        <div class="course" th:text="${courseTitle}">
-            Course Title
-        </div>
-    </div>
-
-    <div class="details">
-        <div class="left">
-            <div class="row">
-                <span class="label">Instructor:</span>
-                <span class="value" th:text="${instructorName}">Instructor Name</span>
-            </div>
-
-            <div class="row">
-                <span class="label">Date:</span>
-                <span class="value" th:text="${issuedAt}">01.01.2026</span>
-            </div>
-        </div>
-
-        <div class="right">
-            <div class="row">
-                <span class="label">Certificate No:</span>
-                <span class="value" th:text="${certificateNumber}">CERT-123</span>
-            </div>
-
-            <div class="row">
-                <span class="label">Verification Code:</span>
-                <span class="value" th:text="${verificationCode}">ABC123XYZ</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="bottom">
-        <div class="signature">
-            <div class="sign-line"></div>
-            <div>Instructor Signature</div>
-        </div>
-
-        <div class="qr">
-            <img th:src="'data:image/png;base64,' + ${qrCodeBase64}" alt="QR Code"/>
-        </div>
-    </div>
-
-    <div class="verify">
-        Verify at:
-        <span th:text="${verificationUrl}">
-            http://localhost:8080/api/certificates/verify/code
-        </span>
-    </div>
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #c9a84c, #f0d080, #c9a84c);"></div>
+  </div>
 
 </div>
-
-</body>
-</html>
