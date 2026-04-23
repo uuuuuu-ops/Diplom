@@ -524,7 +524,7 @@ mvn test -Dtest="*ServiceTest,*ProducerTest"
 
 ---
 
-![CI](https://github.com/ТВО_ИМЯ/Diplom/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/uuuuuu-ops/Diplom/actions/workflows/ci.yml/badge.svg)
 
 ## 📄 Лицензия
 
