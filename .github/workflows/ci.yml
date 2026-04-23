@@ -61,6 +61,7 @@ jobs:
           GITHUB_CLIENT_SECRET: test
           MAIL_USERNAME: test@test.com
           MAIL_PASSWORD: test
+          CERTIFICATE_STORAGE_PATH: /tmp/certificates
 
       - name: Upload test results
         if: always()
