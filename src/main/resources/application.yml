@@ -3,11 +3,32 @@ spring:
     name: Diplom
 
   # =====================
+  # OAUTH2 (GOOGLE + GITHUB)
+  # =====================
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            scope:
+              - user:email
+
+  # =====================
   # MONGODB (ATLAS)
   # =====================
   data:
     mongodb:
       uri: ${SPRING_DATA_MONGODB_URI}
+
     # =====================
     # REDIS
     # =====================
@@ -61,7 +82,6 @@ spring:
     prefix: classpath:/templates/
     suffix: .html
     mode: HTML
-
 # =====================
 # LOGGING
 # =====================
@@ -143,3 +163,6 @@ springdoc:
       paths-to-match: /comments/**
     - group: Profiles
       paths-to-match: /profile/**
+      
+oauth2:
+  redirect-uri: ${OAUTH2_REDIRECT_URI}
