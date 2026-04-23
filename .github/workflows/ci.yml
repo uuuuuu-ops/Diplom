@@ -62,6 +62,8 @@ jobs:
           MAIL_USERNAME: test@test.com
           MAIL_PASSWORD: test
           CERTIFICATE_STORAGE_PATH: /tmp/certificates
+          PAYPAL_SUBSCRIPTION_PLAN_ID: test-plan-id
+
 
       - name: Upload test results
         if: always()
