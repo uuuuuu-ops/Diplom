@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)  
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
