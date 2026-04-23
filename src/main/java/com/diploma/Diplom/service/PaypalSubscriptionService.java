@@ -1,8 +1,11 @@
 package com.diploma.Diplom.service;
 
+import com.diploma.Diplom.dto.PayPalLink;
+import com.diploma.Diplom.dto.PayPalSubscriptionResponse;
 import com.diploma.Diplom.model.Subscription;
 import com.diploma.Diplom.util.SecurityUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -55,10 +58,11 @@ public class PaypalSubscriptionService {
 
         HttpEntity<?> request = new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                 baseUrl + "/v1/oauth2/token",
+                HttpMethod.POST,
                 request,
-                Map.class
+                new ParameterizedTypeReference<>() {}
         );
 
         return (String) response.getBody().get("access_token");
@@ -66,7 +70,7 @@ public class PaypalSubscriptionService {
 
     public String createSubscriptionAndGetApprovalLink() {
 
-        String token = getAccessToken(); 
+        String token = getAccessToken();
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -85,22 +89,23 @@ public class PaypalSubscriptionService {
         HttpEntity<Map<String, Object>> request =
                 new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(
-                baseUrl + "/v1/billing/subscriptions",
-                request,
-                Map.class
-        );
+        ResponseEntity<PayPalSubscriptionResponse> response =
+                restTemplate.exchange(
+                        baseUrl + "/v1/billing/subscriptions",
+                        HttpMethod.POST,
+                        request,
+                        PayPalSubscriptionResponse.class
+                );
 
-        Map<String, Object> responseBody = response.getBody();
+        PayPalSubscriptionResponse responseBody = response.getBody();
 
-        String subscriptionId = (String) responseBody.get("id");
+        String subscriptionId = responseBody.getId();
 
-        List<Map<String, String>> links =
-                (List<Map<String, String>>) responseBody.get("links");
+        List<PayPalLink> links = responseBody.getLinks();
 
         String approvalUrl = links.stream()
-                .filter(l -> "approve".equals(l.get("rel")))
-                .map(l -> l.get("href"))
+                .filter(l -> "approve".equals(l.getRel()))
+                .map(PayPalLink::getHref)
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Approval link not found"));
 
@@ -112,8 +117,7 @@ public class PaypalSubscriptionService {
         );
 
         return approvalUrl;
-    }
-
+        }
     public Subscription confirmSubscription(String subscriptionId) {
 
         String token = getAccessToken();
@@ -123,11 +127,11 @@ public class PaypalSubscriptionService {
 
         HttpEntity<Void> request = new HttpEntity<>(headers);
 
-        ResponseEntity<Map> response = restTemplate.exchange(
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                 baseUrl + "/v1/billing/subscriptions/" + subscriptionId,
                 HttpMethod.GET,
                 request,
-                Map.class
+                new ParameterizedTypeReference<>() {}
         );
 
         String status = (String) response.getBody().get("status");

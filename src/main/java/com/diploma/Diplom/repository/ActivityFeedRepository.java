@@ -10,8 +10,6 @@ import com.diploma.Diplom.model.ActivityFeed;
 
 public interface ActivityFeedRepository extends MongoRepository<ActivityFeed, String> {
 
-    /** @deprecated Use {@link #findByUserId(String, Pageable)} to avoid loading all activity at once */
-    @Deprecated
     List<ActivityFeed> findByUserIdOrderByCreatedAtDesc(String userId);
 
     Page<ActivityFeed> findByUserId(String userId, Pageable pageable);
