@@ -51,7 +51,7 @@ paypal:
   client-id: test
   client-secret: test
   base-url: https://api-m.sandbox.paypal.com
-  plan-id: test
+  plan-id: test-plan-id
 
 app:
   upload:
@@ -74,3 +74,8 @@ logging:
   level:
     root: WARN
     com.diploma.Diplom: INFO
+
+ai:
+  resume:
+    api:
+      url: http://localhost:8000
