@@ -163,6 +163,8 @@ springdoc:
       paths-to-match: /comments/**
     - group: Profiles
       paths-to-match: /profile/**
-      
+    - group: Admin
+      paths-to-match: /admin/**
+
 oauth2:
   redirect-uri: ${OAUTH2_REDIRECT_URI}

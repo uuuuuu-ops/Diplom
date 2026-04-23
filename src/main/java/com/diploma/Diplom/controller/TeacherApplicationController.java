@@ -64,8 +64,6 @@ public class TeacherApplicationController {
             @Parameter(description = "Resume PDF file")
             @RequestParam("resumeFile") MultipartFile resumeFile
     ) {
-        // principal.getName() returns userId (JWT subject = user.getId())
-        // так что ищем по ID, не по email
         User user = userRepository.findById(principal.getName())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 

@@ -3,7 +3,6 @@ package com.diploma.Diplom.service;
 import com.diploma.Diplom.exception.ForbiddenException;
 import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.messaging.CertificateProducer;
-import com.diploma.Diplom.messaging.ActivityProducer;
 import com.diploma.Diplom.model.CourseProgress;
 import com.diploma.Diplom.model.Lesson;
 import com.diploma.Diplom.model.Quiz;

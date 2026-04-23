@@ -11,23 +11,23 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.diploma.Diplom.service.OAuth2UserService;
-
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
-@Configuration(proxyBeanMethods = false)  
+@Configuration(proxyBeanMethods = false)
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
-    private final OAuth2UserService oAuth2UserService;       
-    private final OAuth2SuccessHandler oAuth2SuccessHandler; 
+    private final OAuth2UserService oAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -35,15 +35,17 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/auth/**",
-                    "/oauth2/**",           
-                    "/login/oauth2/**",     
+                    "/oauth2/**",
+                    "/login/oauth2/**",
                     "/swagger-ui/**",
-                    "/v3/api-docs/**",
-                    "/swagger-ui.html"
+                    "/swagger-ui.html",
+                    "/v3/api-docs",
+                    "/v3/api-docs/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
@@ -63,7 +65,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        config.setAllowedHeaders(List.of("*")); 
+        config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
