@@ -40,6 +40,7 @@ jobs:
       - name: Build and test
         run: mvn clean verify
         env:
+          SPRING_PROFILES_ACTIVE: test   
           SPRING_DATA_MONGODB_URI: ${{ secrets.MONGODB_URI }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           OAUTH2_REDIRECT_URI: http://localhost:3000/oauth2/callback
@@ -63,6 +64,8 @@ jobs:
           MAIL_PASSWORD: test
           CERTIFICATE_STORAGE_PATH: /tmp/certificates
           PAYPAL_SUBSCRIPTION_PLAN_ID: test-plan-id
+          AI_RESUME_API_URL: http://localhost:8000
+
 
 
       - name: Upload test results
