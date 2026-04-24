@@ -40,7 +40,7 @@ public class CertificateController {
                 content = @Content)
         }
     )
-    @PreAuthorize("hasRole('ADMIN')") // Only admins can manually issue certificates
+    @PreAuthorize("hasRole('ADMIN')") 
     @PostMapping("/issue")
     public ResponseEntity<CertificateResponse> issueCertificate(
             @Parameter(description = "Student user ID") @RequestParam String userId,
@@ -58,6 +58,7 @@ public class CertificateController {
             @ApiResponse(responseCode = "404", description = "Certificate not found", content = @Content)
         }
     )
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/regenerate")
     public ResponseEntity<CertificateResponse> regenerateCertificate(
             @Parameter(description = "Certificate ID") @PathVariable String id) {

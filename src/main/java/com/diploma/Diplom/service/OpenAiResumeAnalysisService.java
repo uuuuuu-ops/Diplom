@@ -2,6 +2,7 @@ package com.diploma.Diplom.service;
 
 import com.diploma.Diplom.dto.ResumeAnalysisResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import java.net.http.HttpResponse;
 import java.util.Map;
 import java.time.Duration;
 
+@Slf4j
 @Service
 public class OpenAiResumeAnalysisService {
 
@@ -56,12 +58,12 @@ public class OpenAiResumeAnalysisService {
             if (response.statusCode() == 200) {
                 return parseResponse(response.body());
             } else {
-                System.err.println("AI API error: " + response.statusCode() + " " + response.body());
+                log.error("AI API error: status={}, body={}", response.statusCode(), response.body());
                 return fallbackResult(resumeText, specialization, yearsOfExperience);
             }
 
         } catch (Exception e) {
-            System.err.println("AI API unavailable: " + e.getMessage());
+            log.warn("AI API unavailable: {}", e.getMessage());
             return fallbackResult(resumeText, specialization, yearsOfExperience);
         }
     }

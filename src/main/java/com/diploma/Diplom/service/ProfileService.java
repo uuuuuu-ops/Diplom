@@ -3,11 +3,12 @@ package com.diploma.Diplom.service;
 import com.diploma.Diplom.dto.ActivityItem;
 import com.diploma.Diplom.dto.ProfileResponse;
 import com.diploma.Diplom.dto.UpdateProfileRequest;
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.User;
 import com.diploma.Diplom.repository.ActivityFeedRepository;
 import com.diploma.Diplom.repository.UserRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-
 
 @Service
 public class ProfileService {
@@ -24,12 +25,12 @@ public class ProfileService {
     public ProfileResponse getMyProfile(String userId) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        
         var activity = activityFeedRepository
-                .findByUserIdOrderByCreatedAtDesc(userId)
+                .findByUserIdOrderByCreatedAtDesc(userId, PageRequest.of(0, 20))
                 .stream()
-                .limit(20)
                 .map(a -> new ActivityItem(
                         a.getType(),
                         a.getMessage(),
@@ -49,7 +50,7 @@ public class ProfileService {
     public void updateProfile(String userId, UpdateProfileRequest request) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (request.name() != null && !request.name().isBlank()) {
             user.setName(request.name());
@@ -57,10 +58,13 @@ public class ProfileService {
         if (request.age() != null) {
             user.setAge(request.age());
         }
-        if (request.profileImageUrl() != null && !request.profileImageUrl().isBlank()) {
-            user.setProfileImageUrl(request.profileImageUrl());
-        }
+        userRepository.save(user);
+    }
 
+    public void updateAvatar(String userId, String cloudinaryUrl) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        user.setProfileImageUrl(cloudinaryUrl);
         userRepository.save(user);
     }
 }

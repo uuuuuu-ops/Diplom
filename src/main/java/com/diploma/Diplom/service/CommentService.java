@@ -3,6 +3,7 @@ package com.diploma.Diplom.service;
 import com.diploma.Diplom.dto.CommentRequest;
 import com.diploma.Diplom.dto.CommentResponse;
 import com.diploma.Diplom.exception.BadRequestException;
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.*;
 import com.diploma.Diplom.repository.CommentRepository;
 import com.diploma.Diplom.repository.UserRepository;
@@ -21,7 +22,6 @@ public class CommentService {
     private final UserRepository userRepository;
     private final CommentNotificationProducer notificationProducer;
 
-    // CREATE COMMENT
     public CommentResponse addComment(String userId,
                                       CommentTargetType type,
                                       String targetId,
@@ -32,7 +32,7 @@ public class CommentService {
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Comment comment = new Comment();
         comment.setContent(request.getContent().trim());

@@ -147,7 +147,7 @@ public class QuizService {
     }
 
     private User getApprovedTeacher(String userId) {
-        User user = userRepository.findByEmail(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if (user.getRole() != Role.TEACHER)
             throw new ForbiddenException("Only teachers can manage quizzes");

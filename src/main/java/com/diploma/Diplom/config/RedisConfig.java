@@ -11,8 +11,8 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
@@ -45,41 +45,35 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisCacheManager cacheManager(RedisConnectionFactory factory,
-                                          ObjectMapper redisObjectMapper) {
-        GenericJackson2JsonRedisSerializer jsonSerializer =
-                new GenericJackson2JsonRedisSerializer(redisObjectMapper);
+public RedisCacheManager cacheManager(RedisConnectionFactory factory,
+                                      ObjectMapper redisObjectMapper) {
 
-        RedisCacheConfiguration defaults = RedisCacheConfiguration.defaultCacheConfig()
-                .serializeKeysWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
-                .disableCachingNullValues();
+    RedisSerializer<Object> jsonSerializer =
+            RedisSerializer.json();
 
-        return RedisCacheManager.builder(factory)
-                .cacheDefaults(defaults)
-                // Отдельный курс по ID
-                .withCacheConfiguration("course",
-                        defaults.entryTtl(Duration.ofMinutes(10)))
-                // Публичный каталог с фильтрами
-                .withCacheConfiguration("courses",
-                        defaults.entryTtl(Duration.ofMinutes(2)))
-                // Рейтинги курса
-                .withCacheConfiguration("courseRating",
-                        defaults.entryTtl(Duration.ofMinutes(10)))
-                // Доступ пользователя к курсу
-                .withCacheConfiguration("access",
-                        defaults.entryTtl(Duration.ofMinutes(5)))
-                // Лента активности пользователя
-                .withCacheConfiguration("activityFeed",
-                        defaults.entryTtl(Duration.ofMinutes(2)))
-                // Прогресс пользователя по курсу
-                .withCacheConfiguration("progress",
-                        defaults.entryTtl(Duration.ofMinutes(5)))
-                // Факт наличия активной подписки
-                .withCacheConfiguration("subscription",
-                        defaults.entryTtl(Duration.ofMinutes(3)))
-                .build();
-    }
+    RedisCacheConfiguration defaults = RedisCacheConfiguration.defaultCacheConfig()
+            .serializeKeysWith(
+                    RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+            .serializeValuesWith(
+                    RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
+            .disableCachingNullValues();
+
+    return RedisCacheManager.builder(factory)
+            .cacheDefaults(defaults)
+            .withCacheConfiguration("course",
+                    defaults.entryTtl(Duration.ofMinutes(10)))
+            .withCacheConfiguration("courses",
+                    defaults.entryTtl(Duration.ofMinutes(2)))
+            .withCacheConfiguration("courseRating",
+                    defaults.entryTtl(Duration.ofMinutes(10)))
+            .withCacheConfiguration("access",
+                    defaults.entryTtl(Duration.ofMinutes(5)))
+            .withCacheConfiguration("activityFeed",
+                    defaults.entryTtl(Duration.ofMinutes(2)))
+            .withCacheConfiguration("progress",
+                    defaults.entryTtl(Duration.ofMinutes(5)))
+            .withCacheConfiguration("subscription",
+                    defaults.entryTtl(Duration.ofMinutes(3)))
+            .build();
+}
 }

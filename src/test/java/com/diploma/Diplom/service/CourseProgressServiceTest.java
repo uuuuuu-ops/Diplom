@@ -60,7 +60,6 @@ class CourseProgressServiceTest {
         existingProgress.setCompleted(false);
     }
 
-    // ─────────────────────── markLessonCompleted ─────────────────────────
 
     @Test
     void markLessonCompleted_noQuiz_success() {
@@ -140,8 +139,6 @@ class CourseProgressServiceTest {
         verify(certificateProducer, never()).requestCertificate(any(), any());
     }
 
-    // ─────────────────────── markQuizPassed ──────────────────────────────
-
     @Test
     void markQuizPassed_success() {
         when(courseProgressRepository.findByUserIdAndCourseId("user-1", "course-1"))
@@ -156,8 +153,6 @@ class CourseProgressServiceTest {
 
         assertThat(result.getPassedQuizIds()).contains("quiz-1");
     }
-
-    // ─────────────────────── isLessonUnlocked ────────────────────────────
 
     @Test
     void isLessonUnlocked_firstLesson_alwaysTrue() {

@@ -81,7 +81,7 @@ class TeacherApplicationServiceTest {
         app.setStatus("PENDING");
 
         when(applicationRepository.findById("app-1")).thenReturn(Optional.of(app));
-        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(teacher)); // ← добавить
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(teacher)); 
         when(applicationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         teacherApplicationService.rejectApplication("app-1", "Not qualified");

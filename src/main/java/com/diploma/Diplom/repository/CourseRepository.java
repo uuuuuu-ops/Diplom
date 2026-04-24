@@ -10,8 +10,7 @@ import java.util.List;
 public interface CourseRepository extends MongoRepository<Course, String> {
     List<Course> findByTeacherId(String teacherId);
 
-    /** @deprecated Use {@link #findByPublishedTrue(Pageable)} to avoid loading all courses at once */
-    @Deprecated
+    
     List<Course> findByPublishedTrue();
 
     Page<Course> findByPublishedTrue(Pageable pageable);

@@ -35,8 +35,6 @@ class LikeServiceTest {
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
     }
 
-    // ─────────────────────── toggle ──────────────────────────────────────
-
     @Test
     @DisplayName("toggle: не лайкнуто — создаёт лайк, возвращает liked=true")
     void toggle_notLiked_createsLike() {
@@ -80,7 +78,6 @@ class LikeServiceTest {
         assertThat(result.getTotalLikes()).isEqualTo(5L);
     }
 
-    // ─────────────────────── getStatus ───────────────────────────────────
 
     @Test
     @DisplayName("getStatus: пользователь лайкнул — liked=true с кешированным счётчиком")

@@ -1,5 +1,7 @@
 package com.diploma.Diplom.security;
 
+
+import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.User;
 import com.diploma.Diplom.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,7 +35,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String email = oAuth2User.getAttribute("email");
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found after OAuth2: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found after OAuth2: " + email));
 
         String token = jwtService.generateToken(user);
 

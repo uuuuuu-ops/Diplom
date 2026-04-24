@@ -22,9 +22,6 @@ class MessagingProducersTest {
 
     @Mock RabbitTemplate rabbitTemplate;
 
-    // ═══════════════════════════════════════════════════════════════════
-    // EnrollmentProducer
-    // ═══════════════════════════════════════════════════════════════════
 
     @InjectMocks EnrollmentProducer enrollmentProducer;
 

@@ -69,9 +69,11 @@ public class EnrollmentService {
             throw new ForbiddenException("This course is not free");
         }
 
+        boolean[] isNew = {false};
         Enrollment enrollment = enrollmentRepository
                 .findByUserIdAndCourseIdAndStatus(userId, courseId, EnrollmentStatus.ACTIVE)
                 .orElseGet(() -> {
+                    isNew[0] = true;
                     Enrollment e = new Enrollment();
                     e.setUserId(userId);
                     e.setCourseId(courseId);
@@ -81,8 +83,10 @@ public class EnrollmentService {
                     return enrollmentRepository.save(e);
                 });
 
-        // Async: welcome event (badges, statistics, etc.)
-        enrollmentProducer.sendEnrollmentEvent(userId, courseId, AccessType.FREE.name());
+        // Async: welcome event only on first enrollment
+        if (isNew[0]) {
+            enrollmentProducer.sendEnrollmentEvent(userId, courseId, AccessType.FREE.name());
+        }
 
         return enrollment;
     }

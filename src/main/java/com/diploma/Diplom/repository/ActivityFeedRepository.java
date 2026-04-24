@@ -12,5 +12,7 @@ public interface ActivityFeedRepository extends MongoRepository<ActivityFeed, St
 
     List<ActivityFeed> findByUserIdOrderByCreatedAtDesc(String userId);
 
+    Page<ActivityFeed> findByUserIdOrderByCreatedAtDesc(String userId, Pageable pageable);
+
     Page<ActivityFeed> findByUserId(String userId, Pageable pageable);
 }

@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Import;
 import com.diploma.Diplom.controller.TestSecurityConfig;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -41,10 +42,12 @@ class SecurityRoutesTest {
 
     @Autowired MockMvc mockMvc;
 
+    // ── Core auth/security beans ──────────────────────────────────────────
     @MockitoBean AuthService authService;
     @MockitoBean JwtService jwtService;
     @MockitoBean UserRepository userRepository;
 
+    // ── Domain service beans required by controllers ──────────────────────
     @MockitoBean CourseService courseService;
     @MockitoBean EnrollmentService enrollmentService;
     @MockitoBean LessonService lessonService;
@@ -53,6 +56,9 @@ class SecurityRoutesTest {
     @MockitoBean CourseProgressService courseProgressService;
     @MockitoBean CourseRatingService courseRatingService;
     @MockitoBean TeacherApplicationService teacherApplicationService;
+    @MockitoBean RedisTemplate<String, String> redisTemplate;
+
+    // ── TestSecurityConfig provides JwtBlacklistService + RateLimiterService mocks ──
 
     @Test
     @DisplayName("GET /courses/public — без аутентификации — 200 OK")

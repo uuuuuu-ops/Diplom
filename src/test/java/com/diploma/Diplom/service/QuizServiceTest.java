@@ -75,13 +75,13 @@ class QuizServiceTest {
         req.setQuestions(List.of(validQuestion()));
         req.setPassingScore(70);
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(lessonRepository.findById("lesson-1")).thenReturn(Optional.of(lesson));
         when(courseRepository.findById("course-1")).thenReturn(Optional.of(course));
         when(quizRepository.findByLessonId("lesson-1")).thenReturn(Optional.empty());
         when(quizRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Quiz result = quizService.createQuiz("teacher@test.com", "lesson-1", req);
+        Quiz result = quizService.createQuiz("teacher-1", "lesson-1", req);
 
         assertThat(result.getTitle()).isEqualTo("Java Quiz");
         assertThat(result.getPassingScore()).isEqualTo(70);
@@ -95,12 +95,12 @@ class QuizServiceTest {
         CreateQuizRequest req = new CreateQuizRequest();
         req.setQuestions(List.of(validQuestion()));
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(lessonRepository.findById("lesson-1")).thenReturn(Optional.of(lesson));
         when(courseRepository.findById("course-1")).thenReturn(Optional.of(course));
         when(quizRepository.findByLessonId("lesson-1")).thenReturn(Optional.of(new Quiz()));
 
-        assertThatThrownBy(() -> quizService.createQuiz("teacher@test.com", "lesson-1", req))
+        assertThatThrownBy(() -> quizService.createQuiz("teacher-1", "lesson-1", req))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("already exists");
     }
@@ -112,12 +112,12 @@ class QuizServiceTest {
         req.setTitle("Empty Quiz");
         req.setQuestions(List.of());
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(lessonRepository.findById("lesson-1")).thenReturn(Optional.of(lesson));
         when(courseRepository.findById("course-1")).thenReturn(Optional.of(course));
         when(quizRepository.findByLessonId("lesson-1")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> quizService.createQuiz("teacher@test.com", "lesson-1", req))
+        assertThatThrownBy(() -> quizService.createQuiz("teacher-1", "lesson-1", req))
                 .isInstanceOf(BadRequestException.class);
     }
 
@@ -133,12 +133,12 @@ class QuizServiceTest {
         req.setTitle("Quiz");
         req.setQuestions(List.of(q));
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(lessonRepository.findById("lesson-1")).thenReturn(Optional.of(lesson));
         when(courseRepository.findById("course-1")).thenReturn(Optional.of(course));
         when(quizRepository.findByLessonId("lesson-1")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> quizService.createQuiz("teacher@test.com", "lesson-1", req))
+        assertThatThrownBy(() -> quizService.createQuiz("teacher-1", "lesson-1", req))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("out of range");
     }
@@ -155,12 +155,12 @@ class QuizServiceTest {
         req.setTitle("Quiz");
         req.setQuestions(List.of(q));
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(lessonRepository.findById("lesson-1")).thenReturn(Optional.of(lesson));
         when(courseRepository.findById("course-1")).thenReturn(Optional.of(course));
         when(quizRepository.findByLessonId("lesson-1")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> quizService.createQuiz("teacher@test.com", "lesson-1", req))
+        assertThatThrownBy(() -> quizService.createQuiz("teacher-1", "lesson-1", req))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("at least two options");
     }
@@ -173,11 +173,11 @@ class QuizServiceTest {
         CreateQuizRequest req = new CreateQuizRequest();
         req.setQuestions(List.of(validQuestion()));
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(lessonRepository.findById("lesson-1")).thenReturn(Optional.of(lesson));
         when(courseRepository.findById("course-1")).thenReturn(Optional.of(course));
 
-        assertThatThrownBy(() -> quizService.createQuiz("teacher@test.com", "lesson-1", req))
+        assertThatThrownBy(() -> quizService.createQuiz("teacher-1", "lesson-1", req))
                 .isInstanceOf(ForbiddenException.class);
     }
 
@@ -189,13 +189,13 @@ class QuizServiceTest {
         req.setPassingScore(null);
         req.setQuestions(List.of(validQuestion()));
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(lessonRepository.findById("lesson-1")).thenReturn(Optional.of(lesson));
         when(courseRepository.findById("course-1")).thenReturn(Optional.of(course));
         when(quizRepository.findByLessonId("lesson-1")).thenReturn(Optional.empty());
         when(quizRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Quiz result = quizService.createQuiz("teacher@test.com", "lesson-1", req);
+        Quiz result = quizService.createQuiz("teacher-1", "lesson-1", req);
 
         assertThat(result.getPassingScore()).isEqualTo(60);
     }
@@ -209,12 +209,12 @@ class QuizServiceTest {
         quiz.setId("quiz-1");
         quiz.setLessonId("lesson-1");
 
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(quizRepository.findById("quiz-1")).thenReturn(Optional.of(quiz));
         when(lessonRepository.findById("lesson-1")).thenReturn(Optional.of(lesson));
         when(courseRepository.findById("course-1")).thenReturn(Optional.of(course));
 
-        quizService.deleteQuiz("teacher@test.com", "quiz-1");
+        quizService.deleteQuiz("teacher-1", "quiz-1");
 
         verify(quizRepository).delete(quiz);
     }
@@ -222,10 +222,10 @@ class QuizServiceTest {
     @Test
     @DisplayName("deleteQuiz: квиз не найден — ResourceNotFoundException")
     void deleteQuiz_notFound_throws() {
-        when(userRepository.findByEmail("teacher@test.com")).thenReturn(Optional.of(approvedTeacher));
+        when(userRepository.findById("teacher-1")).thenReturn(Optional.of(approvedTeacher));
         when(quizRepository.findById("missing")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> quizService.deleteQuiz("teacher@test.com", "missing"))
+        assertThatThrownBy(() -> quizService.deleteQuiz("teacher-1", "missing"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 }

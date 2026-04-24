@@ -81,7 +81,6 @@ class EnrollmentServiceTest {
         assertThat(enrollmentService.hasAccess("user-1", course)).isFalse();
     }
 
-    // ─────────────────────── enrollFreeCourse ────────────────────────────
 
     @Test
     @DisplayName("enrollFreeCourse: регистрирует на бесплатный курс")
@@ -124,8 +123,8 @@ class EnrollmentServiceTest {
 
         assertThat(result).isSameAs(existing);
         verify(enrollmentRepository, never()).save(any());
-        // event still sent even when enrollment already existed
-        verify(enrollmentProducer).sendEnrollmentEvent("user-1", "course-1", AccessType.FREE.name());
+        // event is NOT sent when enrollment already existed (isNew == false)
+        verify(enrollmentProducer, never()).sendEnrollmentEvent(any(), any(), any());
     }
 
     @Test

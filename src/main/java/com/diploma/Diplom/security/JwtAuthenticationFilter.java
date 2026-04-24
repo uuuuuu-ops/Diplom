@@ -2,6 +2,7 @@ package com.diploma.Diplom.security;
 
 import com.diploma.Diplom.model.User;
 import com.diploma.Diplom.repository.UserRepository;
+import com.diploma.Diplom.service.JwtBlacklistService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,10 +22,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final JwtBlacklistService blacklistService;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository) {
+    public JwtAuthenticationFilter(JwtService jwtService,
+                                   UserRepository userRepository,
+                                   JwtBlacklistService blacklistService) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
+        this.blacklistService = blacklistService;
     }
 
     @Override
@@ -34,7 +39,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -47,12 +51,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String userId = jwtService.extractUserId(token);
+        String jti = jwtService.extractJti(token);
+        if (blacklistService.isBlacklisted(jti)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
+        String userId = jwtService.extractUserId(token);
         User user = userRepository.findById(userId).orElse(null);
 
         if (user != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
             List<SimpleGrantedAuthority> authorities =
                     List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
 
@@ -62,7 +70,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             null,
                             authorities
                     );
-
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
 

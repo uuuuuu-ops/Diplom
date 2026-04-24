@@ -28,8 +28,6 @@ class BookmarkServiceTest {
 
     @InjectMocks BookmarkService bookmarkService;
 
-    // ─────────────────────── toggleBookmark ──────────────────────────────
-
     @Test
     @DisplayName("toggleBookmark: не было закладки — создаёт, возвращает true")
     void toggleBookmark_noExisting_createsAndReturnsTrue() {
@@ -58,8 +56,6 @@ class BookmarkServiceTest {
         verify(bookmarkRepository, never()).save(any());
         verify(activityFeedService, never()).addActivity(any(), any(), any(), any());
     }
-
-    // ─────────────────────── getUserBookmarks ────────────────────────────
 
     @Test
     @DisplayName("getUserBookmarks: есть закладки — возвращает курсы")
@@ -90,8 +86,6 @@ class BookmarkServiceTest {
         assertThat(result).isEmpty();
         verify(courseRepository, never()).findAllById(any());
     }
-
-    // ─────────────────────── isBookmarked ────────────────────────────────
 
     @Test
     @DisplayName("isBookmarked: закладка существует — true")

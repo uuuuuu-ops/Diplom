@@ -7,6 +7,7 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.diploma.Diplom.exception.BadRequestException;
@@ -86,19 +87,19 @@ public class FileController {
         }
     )
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Resource> getFile(@RequestParam("path") String filePath) {
         try {
-            
-            String lower = filePath.toLowerCase();
-            if (!isAllowedExtension(lower)) {
-                throw new BadRequestException("File type not allowed");
-            }
-
             Path rootPath = Paths.get(uploadRootDir).toAbsolutePath().normalize();
             Path resolvedPath = rootPath.resolve(filePath.replace("\\", "/")).normalize();
 
             if (!resolvedPath.startsWith(rootPath)) {
                 throw new BadRequestException("Invalid file path");
+            }
+
+            String normalizedName = resolvedPath.getFileName().toString().toLowerCase();
+            if (!isAllowedExtension(normalizedName)) {
+                throw new BadRequestException("File type not allowed");
             }
 
             Resource resource = new UrlResource(resolvedPath.toUri());

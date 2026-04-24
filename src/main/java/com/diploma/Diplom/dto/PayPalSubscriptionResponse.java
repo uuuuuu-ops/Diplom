@@ -8,6 +8,4 @@ import lombok.Data;
 public class PayPalSubscriptionResponse {
     private String id;
     private List<PayPalLink> links;
-
-   
 }

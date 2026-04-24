@@ -43,8 +43,6 @@ class CommentServiceTest {
         user.setName("Alice");
     }
 
-    // ─────────────────────── addComment ──────────────────────────────────
-
     @Test
     @DisplayName("addComment: успешное создание комментария к курсу")
     void addComment_success() {
@@ -137,8 +135,6 @@ class CommentServiceTest {
 
         assertThat(result.getParentId()).isEqualTo("parent-comment-1");
     }
-
-    // ─────────────────────── getComments ─────────────────────────────────
 
     @Test
     @DisplayName("getComments: возвращает корневые комментарии с вложенными ответами")

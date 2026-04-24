@@ -41,12 +41,17 @@ public class CertificateService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
+        // Resolve real instructor name
+        String instructorName = userRepository.findById(course.getTeacherId())
+                .map(User::getName)
+                .orElse("Course Instructor");
+
         Certificate certificate = new Certificate();
         certificate.setUserId(userId);
         certificate.setCourseId(courseId);
         certificate.setStudentName(user.getName());
         certificate.setCourseTitle(course.getTitle());
-        certificate.setInstructorName("Course Instructor");
+        certificate.setInstructorName(instructorName);
         certificate.setCertificateNumber(CertificateUtils.generateCertificateNumber());
         certificate.setVerificationCode(CertificateUtils.generateVerificationCode());
         certificate.setIssuedAt(LocalDateTime.now());

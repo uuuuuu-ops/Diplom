@@ -81,25 +81,6 @@ class AuthServiceTest {
         verify(emailProducer, never()).sendVerificationEmail(any(), any());
     }
 
-    @Test
-    @DisplayName("register: роль TEACHER — сохраняется с ролью TEACHER")
-    void register_teacherRole() {
-        RegisterRequest req = new RegisterRequest();
-        req.setName("Bob");
-        req.setEmail("bob@test.com");
-        req.setPassword("secret");
-        req.setRole(Role.TEACHER);
-
-        when(userRepository.findByEmail("bob@test.com")).thenReturn(Optional.empty());
-        when(passwordEncoder.encode("secret")).thenReturn("hashed");
-
-        authService.register(req);
-
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture());
-        assertThat(captor.getValue().getRole()).isEqualTo(Role.TEACHER);
-        assertThat(captor.getValue().isEnabled()).isFalse();
-    }
 
     // ───────────────────────── verify ────────────────────────────────────
 

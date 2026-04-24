@@ -2,6 +2,7 @@ package com.diploma.Diplom.auth;
 
 import com.diploma.Diplom.exception.*;
 import com.diploma.Diplom.messaging.EmailProducer;
+import com.diploma.Diplom.model.Role;
 import com.diploma.Diplom.model.User;
 import com.diploma.Diplom.repository.UserRepository;
 import com.diploma.Diplom.security.JwtService;
@@ -32,11 +33,16 @@ public class AuthService {
             throw new ConflictException("User with this email already exists");
         }
 
+        if (request.getRole() == Role.ADMIN) {
+            throw new BadRequestException("Invalid role");
+        }
+
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
+        user.setTeacherApproved(false);
         user.setEnabled(false);
 
         userRepository.save(user);

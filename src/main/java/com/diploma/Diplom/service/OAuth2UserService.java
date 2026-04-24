@@ -1,5 +1,6 @@
 package com.diploma.Diplom.service;
 
+import com.diploma.Diplom.exception.BadRequestException;
 import com.diploma.Diplom.model.Role;
 import com.diploma.Diplom.model.User;
 import com.diploma.Diplom.repository.UserRepository;
@@ -43,7 +44,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
         }
 
         if (resolvedEmail == null) {
-            throw new RuntimeException("Email not provided by OAuth2 provider: " + provider);
+            throw new BadRequestException("Email not provided by OAuth2 provider: " + provider);
         }
 
         User user = userRepository.findByEmail(resolvedEmail).orElseGet(() -> {

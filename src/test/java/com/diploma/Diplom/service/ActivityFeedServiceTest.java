@@ -28,8 +28,6 @@ class ActivityFeedServiceTest {
     @InjectMocks
     ActivityFeedService activityFeedService;
 
-    // ─────────────────────── addActivity ─────────────────────────────────
-
     @Test
     @DisplayName("addActivity: сохраняет активность с правильными полями")
     void addActivity_savesWithCorrectFields() {
@@ -57,8 +55,6 @@ class ActivityFeedServiceTest {
         verify(repository).save(captor.capture());
         assertThat(captor.getValue().getType()).isEqualTo("CERTIFICATE");
     }
-
-    // ─────────────────────── getRecentActivity ───────────────────────────
 
     @Test
     @DisplayName("getRecentActivity: возвращает последние 20 записей")

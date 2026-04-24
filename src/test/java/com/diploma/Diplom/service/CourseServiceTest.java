@@ -55,7 +55,6 @@ class CourseServiceTest {
         approvedTeacher.setTeacherApproved(true);
     }
 
-    // ─────────────────────── createCourse ───────────────────────────────
 
     @Test
     @DisplayName("createCourse: платный курс — сохраняет с ценой")
@@ -160,7 +159,6 @@ class CourseServiceTest {
         assertThat(result.getThumbnailPublicId()).isEqualTo("thumbnails/abc123");
     }
 
-    // ─────────────────────── updateCourse ───────────────────────────────
 
     @Test
     @DisplayName("updateCourse: обновляет поля курса")
@@ -232,7 +230,6 @@ class CourseServiceTest {
         verify(cloudinaryService).uploadFile(file, "thumbnails");
     }
 
-    // ─────────────────────── deleteCourse ───────────────────────────────
 
     @Test
     @DisplayName("deleteCourse: удаляет курс и его уроки")
@@ -292,9 +289,7 @@ class CourseServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ─────────────────────── getPublicCourses ───────────────────────────
-    // ИСПРАВЛЕНО: getPublicCourses принимает (category, level, Pageable) и возвращает Page<Course>
-
+    
     @Test
     @DisplayName("getPublicCourses: без фильтров — возвращает страницу опубликованных курсов")
     void getPublicCourses_noFilters_returnsPage() {
@@ -346,7 +341,6 @@ class CourseServiceTest {
         verify(courseRepository).findByPublishedTrueAndCategoryAndLevel("IT", "BEGINNER", pageable);
     }
 
-    // ─────────────────────── getTeacherCourses ────────────────────────────
 
     @Test
     @DisplayName("getTeacherCourses: возвращает курсы конкретного преподавателя")
@@ -372,7 +366,6 @@ class CourseServiceTest {
         assertThat(courseService.getTeacherCourses("teacher-1")).isEmpty();
     }
 
-    // ─────────────────────── getCourseById ────────────────────────────────
 
     @Test
     @DisplayName("getCourseById: возвращает курс по ID")
