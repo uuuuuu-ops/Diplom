@@ -65,6 +65,8 @@ jobs:
           CERTIFICATE_STORAGE_PATH: /tmp/certificates
           PAYPAL_SUBSCRIPTION_PLAN_ID: test-plan-id
           AI_RESUME_API_URL: http://localhost:8000
+          APP_ADMIN_PASSWORD: Camshot35
+          APP_ADMIN_EMAIL: admin@lms.com
 
 
 
