@@ -1,0 +1,81 @@
+spring:
+  application:
+    name: Diplom
+
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/testdb
+    redis:
+      host: localhost
+      port: 6379
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: test@test.com
+    password: test
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test
+            client-secret: test
+            scope:
+              - email
+              - profile
+          github:
+            client-id: test
+            client-secret: test
+            scope:
+              - user:email
+
+jwt:
+  secret: test-secret-key-for-testing-purposes-only-32chars
+  expiration: 86400000
+  refresh-expiration: 604800000
+
+cloudinary:
+  cloud-name: test
+  api-key: test
+  api-secret: test
+
+paypal:
+  client-id: test
+  client-secret: test
+  base-url: https://api-m.sandbox.paypal.com
+  plan-id: test-plan-id
+
+app:
+  upload:
+    dir: /tmp/uploads
+  base-url: http://localhost:8080
+  certificate:
+    storage:
+      path: /tmp/certificates
+
+oauth2:
+  redirect-uri: http://localhost:3000/oauth2/callback
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.diploma.Diplom: INFO
+
+ai:
+  resume:
+    api:
+      url: http://localhost:8000
