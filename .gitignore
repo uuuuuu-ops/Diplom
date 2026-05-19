@@ -1,13 +1,22 @@
+node_modules
+.gitignore
+package-lock.json
+package.json
+tsconfig.json
+vite.config.ts
+vite-env.d.ts
+.env
+*/.env
+
+*/.pdf
+*.log
+gitattributes
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-.env
-.gitignore
-docker-compose.yml
-Dockerfile
-
+.gitattributes
 
 ### STS ###
 .apt_generated
@@ -17,12 +26,6 @@ Dockerfile
 .settings
 .springBeans
 .sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
 
 ### NetBeans ###
 /nbproject/private/
@@ -36,3 +39,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+.dockerignore
+mvnw
+mvnw.cmd
+pom.xml
+.mvn
