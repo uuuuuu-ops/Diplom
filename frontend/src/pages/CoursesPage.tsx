@@ -57,7 +57,6 @@ const CoursesPage: React.FC = () => {
     <div className="courses-page">
       <Navbar />
 
-      {/* Search & Filter bar */}
       <div className="courses-toolbar">
         <div className="toolbar-right">
           <div className="search-area">
