@@ -1,4 +1,4 @@
-.auth-bg {
+﻿.auth-bg {
   min-height: 100vh;
   background: var(--bg-deep);
   display: flex;
@@ -75,7 +75,7 @@
   font-family: var(--font-mono);
   font-style: italic;
   font-size: 1rem;
-  color: #061A40;
+  color: var(--input-color);
   outline: none;
   transition: box-shadow 0.2s;
   margin-bottom: 0.2rem;
@@ -86,7 +86,7 @@
 }
 
 .auth-input:focus {
-  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.35);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .auth-error {

@@ -59,15 +59,17 @@ public class LessonService {
         lesson.setUpdatedAt(LocalDateTime.now());
 
         if (videoFile != null && !videoFile.isEmpty()) {
-        if (lesson.getVideoPublicId() != null) {
-            cloudinaryService.deleteFile(lesson.getVideoPublicId()); 
+            if (lesson.getVideoPublicId() != null) {
+                cloudinaryService.deleteFile(lesson.getVideoPublicId());
+            }
+            CloudinaryService.FileUploadResult uploaded =
+                cloudinaryService.uploadFile(videoFile, "videos");
+            lesson.setVideoUrl(uploaded.getFileUrl());
+            lesson.setVideoFileName(uploaded.getFileName());
+            lesson.setVideoPublicId(uploaded.getPublicId());
+        } else if (request.getVideoUrl() != null && !request.getVideoUrl().isBlank()) {
+            lesson.setVideoUrl(request.getVideoUrl());
         }
-        CloudinaryService.FileUploadResult uploaded =
-            cloudinaryService.uploadFile(videoFile, "videos");
-        lesson.setVideoUrl(uploaded.getFileUrl());
-        lesson.setVideoFileName(uploaded.getFileName());
-        lesson.setVideoPublicId(uploaded.getPublicId()); 
-    }
 
         if (lecturePdfFile != null && !lecturePdfFile.isEmpty()) {
             if (lesson.getLecturePdfPublicId() != null) {
@@ -123,6 +125,8 @@ public class LessonService {
             lesson.setVideoUrl(uploaded.getFileUrl());
             lesson.setVideoFileName(uploaded.getFileName());
             lesson.setVideoPublicId(uploaded.getPublicId());
+        } else if (request.getVideoUrl() != null && !request.getVideoUrl().isBlank()) {
+            lesson.setVideoUrl(request.getVideoUrl());
         }
 
         if (lecturePdfFile != null && !lecturePdfFile.isEmpty()) {

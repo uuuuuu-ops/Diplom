@@ -1,4 +1,4 @@
-.activity-page {
+﻿.activity-page {
   min-height: 100vh;
   background: var(--bg-deep);
   color: var(--text-primary);
@@ -65,7 +65,7 @@
 .af-icon.af-good { background: rgba(43, 204, 124, 0.2); color: #2bcc7c; }
 .af-icon.af-bad { background: rgba(195, 64, 64, 0.2); color: #ff7060; }
 .af-icon.af-gold { background: rgba(240, 192, 64, 0.2); color: #f0c040; }
-.af-icon.af-neutral { background: rgba(var(--accent-rgb), 0.2); color: var(--accent); }
+.af-icon.af-neutral { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); }
 
 .af-body { flex: 1; }
 .af-msg {

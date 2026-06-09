@@ -42,4 +42,7 @@ public class CreateLessonRequest {
 
     @Schema(description = "Whether the lesson is published")
     private Boolean published;
+
+    @Schema(description = "External video URL (YouTube, direct .mp4, etc.) — used when no file is uploaded")
+    private String videoUrl;
 }

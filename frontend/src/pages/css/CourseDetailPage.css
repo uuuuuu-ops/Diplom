@@ -1,4 +1,4 @@
-.detail-page {
+﻿.detail-page {
   min-height: 100vh;
   background: var(--bg-deep);
 }
@@ -53,7 +53,7 @@
   font-family: var(--font-mono);
   font-style: italic;
   font-size: 1rem;
-  color: rgba(var(--bg-deep-rgb), 0.5);
+  color: color-mix(in srgb, var(--bg-deep) 50%, transparent);
 }
 
 .detail-meta-row {
@@ -240,7 +240,7 @@
 .detail-enroll-btn:hover {
   background: var(--accent);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.4);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .detail-ratings {

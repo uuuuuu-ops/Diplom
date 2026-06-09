@@ -1,4 +1,4 @@
-.tquiz-page {
+﻿.tquiz-page {
   min-height: 100vh;
   background: var(--bg-deep);
   color: var(--text-primary);
@@ -86,7 +86,7 @@
 .tquiz-option:hover { background: rgba(255,255,255,0.08); }
 .tquiz-option.selected {
   border-color: var(--accent);
-  background: rgba(var(--accent-rgb), 0.15);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
 }
 .tquiz-option input { accent-color: var(--accent); }
 

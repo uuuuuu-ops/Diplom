@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { isAuthenticated, logout, clearToken } from '../api/auth';
 import { getProfile, UserProfile } from '../api/profile';
+import { useTheme } from '../context/ThemeContext';
 import './Navbar.css';
 
 const Navbar: React.FC = () => {
@@ -12,6 +13,7 @@ const Navbar: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     if (loggedIn) {
@@ -56,6 +58,13 @@ const Navbar: React.FC = () => {
         )}
       </div>
       <div className="navbar-right">
+        <button
+          className={`theme-switch${theme === 'light' ? ' theme-switch--light' : ''}`}
+          onClick={toggleTheme}
+          aria-label="Toggle theme"
+        >
+          <span className="theme-switch-thumb" />
+        </button>
         {!isAuth && (
           <>
             <span className="nav-lang">Eng</span>

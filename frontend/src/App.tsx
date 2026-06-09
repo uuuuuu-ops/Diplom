@@ -25,10 +25,12 @@ import ActivityFeedPage from './pages/ActivityFeedPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import NotFoundPage from './pages/NotFoundPage';
 import PrivateRoute from './components/PrivateRoute';
+import { ThemeProvider } from './context/ThemeContext';
 import './App.css';
 
 const App: React.FC = () => {
   return (
+    <ThemeProvider>
     <BrowserRouter>
       <Routes>
         {/* Public */}
@@ -184,6 +186,7 @@ const App: React.FC = () => {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
+    </ThemeProvider>
   );
 };
 

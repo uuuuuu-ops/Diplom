@@ -1,27 +1,46 @@
 @import url('https://fonts.googleapis.com/css2?family=Gabriela&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 :root {
-  --bg-deep: #061A40;
-  --bg-deep-rgb: 6, 26, 64;
-  --bg-card: #006DAA;
-  --bg-card-rgb: 0, 109, 170;
-  --bg-card-dark: #003559;
-  --bg-card-dark-rgb: 0, 53, 89;
-  --accent: #0353A4;
-  --accent-rgb: 3, 83, 164;
-  --accent-hover: #2a7cd0;
-  --text-primary: #B9D6F2;
-  --text-primary-rgb: 185, 214, 242;
-  --text-secondary: rgba(185, 214, 242, 0.75);
-  --text-muted: rgba(185, 214, 242, 0.5);
-  --btn-dark: #003559;
-  --btn-dark-hover: #0353A4;
-  --input-color: #061A40;
+  --bg-deep: #E3F2FD;
+  --bg-card: #90CAF9;
+  --bg-card-dark: #42A5F5;
+  --accent: #64B5F6;
+  --accent-hover: #1D4ED8;
+  --text-primary: #0F2848;
+  --text-secondary: rgba(15, 40, 72, 0.75);
+  --text-muted: rgba(15, 40, 72, 0.5);
+  --btn-dark: #93C5FD;
+  --btn-dark-hover: #60A5FA;
+  --input-color: #1e3a5f;
   --input-bg: rgba(255, 255, 255, 0.95);
-  --input-placeholder: #4a7ba0;
+  --input-placeholder: #64B5F6;
+  --hover-overlay: rgba(0, 0, 0, 0.06);
+  --border-subtle: rgba(0, 0, 0, 0.1);
+  --shadow-dropdown: rgba(0, 0, 0, 0.15);
+  --hover-item: rgba(0, 0, 0, 0.05);
   --border-radius: 20px;
   --font-display: 'Gabriela', serif;
   --font-mono: 'PT Serif', 'Gabriela', serif;
+}
+
+[data-theme="dark"] {
+  --bg-deep: #0F172A;
+  --bg-card: #1E40AF;
+  --bg-card-dark: #1E3A5F;
+  --accent: #3B82F6;
+  --accent-hover: #60A5FA;
+  --text-primary: #E0F2FE;
+  --text-secondary: rgba(224, 242, 254, 0.75);
+  --text-muted: rgba(224, 242, 254, 0.5);
+  --btn-dark: #1E3A5F;
+  --btn-dark-hover: #1E40AF;
+  --input-color: #0F172A;
+  --input-bg: rgba(255, 255, 255, 0.95);
+  --input-placeholder: #4a7ba0;
+  --hover-overlay: rgba(255, 255, 255, 0.1);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --shadow-dropdown: rgba(0, 0, 0, 0.35);
+  --hover-item: rgba(255, 255, 255, 0.06);
 }
 
 * {

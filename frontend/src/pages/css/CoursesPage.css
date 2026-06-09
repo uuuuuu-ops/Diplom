@@ -1,4 +1,4 @@
-.courses-page {
+﻿.courses-page {
   min-height: 100vh;
   background: var(--bg-deep);
 }
@@ -81,7 +81,7 @@
   right: 0;
   z-index: 200;
   width: 380px;
-  background: var(--bg-card-dark);
+  background: var(--bg-card);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 14px;
   padding: 1.2rem 1rem;
@@ -186,9 +186,9 @@
   align-self: flex-start;
   font-family: var(--font-mono);
   font-size: 0.72rem;
-  color: #7dd3fc;
+  color: var(--text-secondary);
   background: rgba(125, 211, 252, 0.12);
-  border: 1px solid rgba(125, 211, 252, 0.3);
+  border: 2px solid var(--bg-deep);
   border-radius: 20px;
   padding: 0.15rem 0.6rem;
   margin: 0.4rem 0.9rem 0;
@@ -222,7 +222,7 @@
   font-family: var(--font-mono);
   font-style: italic;
   font-size: 0.78rem;
-  color: rgba(var(--bg-deep-rgb), 0.55);
+  color: color-mix(in srgb, var(--bg-deep) 55%, transparent);
   text-align: center;
   padding: 0.5rem;
 }

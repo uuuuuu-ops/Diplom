@@ -111,7 +111,7 @@
 }
 
 .btn-signup:hover {
-  background: rgba(255,255,255,0.1);
+  background: var(--hover-overlay);
 }
 
 .nav-user-menu {
@@ -175,10 +175,10 @@
   right: 0;
   min-width: 160px;
   background: var(--bg-card);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 24px var(--shadow-dropdown);
   z-index: 200;
   display: flex;
   flex-direction: column;
@@ -199,9 +199,37 @@
 }
 
 .nav-dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--hover-item);
 }
 
 .nav-dropdown-logout {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--hover-item);
+}
+
+.theme-switch {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--btn-dark);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.theme-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  transition: transform 0.3s;
+}
+
+.theme-switch--light .theme-switch-thumb {
+  transform: translateX(20px);
 }

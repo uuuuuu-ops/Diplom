@@ -1,4 +1,4 @@
-.main-page {
+﻿.main-page {
   min-height: 100vh;
   background: var(--bg-deep);
 }
@@ -80,13 +80,13 @@
   text-decoration: none;
   letter-spacing: 0.5px;
   transition: all 0.25s;
-  box-shadow: 0 4px 20px rgba(var(--bg-card-rgb), 0.4);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--bg-card) 40%, transparent);
 }
 
 .cta-primary:hover {
   background: var(--accent);
   transform: translateY(-2px);
-  box-shadow: 0 6px 28px rgba(var(--accent-rgb), 0.5);
+  box-shadow: 0 6px 28px color-mix(in srgb, var(--accent) 50%, transparent);
 }
 
 .cta-secondary {
@@ -160,7 +160,7 @@
 .footer {
   padding: 2.5rem;
   text-align: center;
-  background: rgba(0,0,0,0.2);
+  background: var(--bg-card);
 }
 
 .footer p {

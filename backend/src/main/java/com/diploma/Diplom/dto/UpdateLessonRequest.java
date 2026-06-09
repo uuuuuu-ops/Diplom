@@ -37,4 +37,7 @@ public class UpdateLessonRequest {
     @Schema(description = "The quiz requirement of the lesson, which is required for the update")
     @NotNull(message = "Quiz required flag is required")
     private Boolean quizRequired;
+
+    @Schema(description = "External video URL (YouTube, direct .mp4, etc.) — used when no file is uploaded")
+    private String videoUrl;
 }

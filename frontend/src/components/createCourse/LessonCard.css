@@ -1,4 +1,4 @@
-.lc-card {
+﻿.lc-card {
   background: var(--bg-card-dark);
   border-radius: 16px;
   margin-bottom: 0.9rem;
@@ -9,7 +9,7 @@
 }
 
 .lc-card:focus-within {
-  border-color: rgba(var(--accent-rgb), 0.4);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .lc-head {
@@ -72,9 +72,9 @@
 }
 
 .lc-chip--type {
-  background: rgba(var(--accent-rgb), 0.15);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
   color: var(--accent);
-  border-color: rgba(var(--accent-rgb), 0.4);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .lc-chip--dim {
@@ -194,7 +194,7 @@
 .lc-ctab--active {
   background: var(--btn-dark);
   color: var(--text-primary);
-  border: 1px solid rgba(var(--accent-rgb), 0.4);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .lc-ctab-lbl {
@@ -366,8 +366,8 @@
 }
 
 .lc-ans-add {
-  background: rgba(var(--accent-rgb), 0.12);
-  border: 1px dashed rgba(var(--accent-rgb), 0.4);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--accent) 40%, transparent);
   color: var(--accent);
   font-family: var(--font-mono);
   font-size: 0.78rem;
@@ -378,7 +378,7 @@
 }
 
 .lc-ans-add:hover {
-  background: rgba(var(--accent-rgb), 0.2);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
   border-color: var(--accent);
 }
 

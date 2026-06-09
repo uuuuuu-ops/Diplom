@@ -1,4 +1,4 @@
-.bookmarks-page {
+﻿.bookmarks-page {
   min-height: 100vh;
   background: var(--bg-deep);
   color: var(--text-primary);
@@ -80,7 +80,7 @@
 .bm-thumb-ph {
   font-family: var(--font-mono);
   font-size: 3rem;
-  color: rgba(var(--bg-deep-rgb), 0.5);
+  color: color-mix(in srgb, var(--bg-deep) 50%, transparent);
 }
 
 .bm-info {

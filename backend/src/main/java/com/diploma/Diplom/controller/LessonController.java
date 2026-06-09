@@ -62,7 +62,8 @@ public class LessonController {
             @RequestParam(required = false, defaultValue = "false") boolean quizRequired,
             @RequestParam(required = false) Boolean published,
             @RequestParam(required = false) MultipartFile videoFile,
-            @RequestParam(required = false) MultipartFile lecturePdfFile
+            @RequestParam(required = false) MultipartFile lecturePdfFile,
+            @RequestParam(required = false) String videoUrl
     ) {
         CreateLessonRequest request = new CreateLessonRequest();
         request.setTitle(title);
@@ -72,6 +73,7 @@ public class LessonController {
         request.setLectureText(lectureText);
         request.setQuizRequired(quizRequired);
         request.setPublished(published);
+        request.setVideoUrl(videoUrl);
         return lessonService.addLessonToCourse(authentication.getName(), courseId, request,
                 videoFile, lecturePdfFile);
     }
@@ -123,7 +125,8 @@ public class LessonController {
             @Parameter(description = "Toggle quiz gate. null = no change")
             @RequestParam(required = false) Boolean quizRequired,
             @RequestParam(required = false) MultipartFile videoFile,
-            @RequestParam(required = false) MultipartFile lecturePdfFile
+            @RequestParam(required = false) MultipartFile lecturePdfFile,
+            @RequestParam(required = false) String videoUrl
     ) {
         UpdateLessonRequest request = new UpdateLessonRequest();
         request.setTitle(title);
@@ -133,6 +136,7 @@ public class LessonController {
         request.setLectureText(lectureText);
         request.setPublished(published);
         request.setQuizRequired(quizRequired);
+        request.setVideoUrl(videoUrl);
         return lessonService.updateLesson(authentication.getName(), lessonId, request,
                 videoFile, lecturePdfFile);
     }

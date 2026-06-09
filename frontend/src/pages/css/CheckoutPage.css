@@ -1,4 +1,4 @@
-.checkout-page {
+﻿.checkout-page {
   min-height: 100vh;
   background: var(--bg-deep);
   color: var(--text-primary);
@@ -94,7 +94,7 @@
 .ck-pay-btn:hover {
   background: var(--accent-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.4);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .ck-paypal {

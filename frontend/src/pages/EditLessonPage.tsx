@@ -47,6 +47,7 @@ const EditLessonPage: React.FC = () => {
   const [published, setPublished] = useState(false);
   const [quizRequired, setQuizRequired] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoUrl, setVideoUrl] = useState('');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
 
   // Quiz state
@@ -83,6 +84,7 @@ const EditLessonPage: React.FC = () => {
         setLectureText(l.lectureText || '');
         setPublished(l.published);
         setQuizRequired(l.quizRequired || false);
+        setVideoUrl(l.videoUrl || '');
       })
       .catch(() => setError('Could not load lesson.'))
       .finally(() => setLoading(false));
@@ -127,6 +129,7 @@ const EditLessonPage: React.FC = () => {
       fd.append('published', String(published));
       fd.append('quizRequired', String(quizRequired));
       if (videoFile) fd.append('videoFile', videoFile);
+      else if (videoUrl.trim()) fd.append('videoUrl', videoUrl.trim());
       if (pdfFile) fd.append('lecturePdfFile', pdfFile);
 
       if (isNew) {
@@ -372,31 +375,43 @@ const EditLessonPage: React.FC = () => {
           <h2>Media</h2>
 
           <div className="el-field">
-            <span>Video file</span>
+            <span>Video</span>
             <div className="el-file-row">
-              {!videoFile && (lesson?.videoFileName || lesson?.videoUrl) && (
+              {videoFile && <span className="el-file-existing">Selected: {videoFile.name}</span>}
+              {!videoFile && lesson?.videoFileName && (
                 <span className="el-file-existing">
-                  {lesson.videoFileName
-                    ? `Current: ${lesson.videoFileName.split('/').pop()}`
-                    : 'External video URL set'}
+                  Current: {lesson.videoFileName.split('/').pop()}
                 </span>
               )}
-              {videoFile && <span className="el-file-existing">Selected: {videoFile.name}</span>}
               <button
                 type="button"
                 className="el-secondary-btn"
                 onClick={() => videoInputRef.current?.click()}
               >
-                {videoFile || lesson?.videoFileName || lesson?.videoUrl ? 'Replace video' : 'Upload video'}
+                {videoFile || lesson?.videoFileName ? 'Replace file' : 'Upload file'}
               </button>
               <input
                 ref={videoInputRef}
                 type="file"
                 accept="video/*"
                 style={{ display: 'none' }}
-                onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+                onChange={(e) => {
+                  setVideoFile(e.target.files?.[0] || null);
+                  if (e.target.files?.[0]) setVideoUrl('');
+                }}
               />
             </div>
+            <div className="el-url-or">
+              <hr /><span>or paste a URL</span><hr />
+            </div>
+            <input
+              type="url"
+              className="el-input"
+              placeholder="https://youtube.com/watch?v=… or direct .mp4 link"
+              value={videoFile ? '' : videoUrl}
+              disabled={!!videoFile}
+              onChange={(e) => setVideoUrl(e.target.value)}
+            />
           </div>
 
           <div className="el-field">

@@ -22,6 +22,13 @@ import {
 import { isAuthenticated, getUserId } from '../api/auth';
 import './css/LessonPage.css';
 
+const getYoutubeEmbedUrl = (url: string): string | null => {
+  const watchMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^?&/]+)/);
+  if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}`;
+  if (url.includes('youtube.com/embed/')) return url;
+  return null;
+};
+
 const formatTimeAgo = (iso: string): string => {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
@@ -352,17 +359,30 @@ const LessonPage: React.FC = () => {
 
           {/* Video */}
           {(lesson.videoUrl || lesson.videoFileName) && (
-          <div className="lesson-video-wrap">
-            {lesson.videoUrl ? (
-              <video controls className="lesson-video" src={lesson.videoUrl} />
-            ) : (
-              <video
-                controls
-                className="lesson-video"
-                src={`${API_BASE}/files?path=${lesson.videoFileName}`}
-              />
-            )}
-          </div>
+            <div className="lesson-video-wrap">
+              {lesson.videoUrl ? (
+                (() => {
+                  const embedUrl = getYoutubeEmbedUrl(lesson.videoUrl);
+                  return embedUrl ? (
+                    <iframe
+                      className="lesson-video"
+                      src={embedUrl}
+                      title="Lesson video"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video controls className="lesson-video" src={lesson.videoUrl} />
+                  );
+                })()
+              ) : (
+                <video
+                  controls
+                  className="lesson-video"
+                  src={`${API_BASE}/files?path=${lesson.videoFileName}`}
+                />
+              )}
+            </div>
           )}
 
           {/* Lecture text */}

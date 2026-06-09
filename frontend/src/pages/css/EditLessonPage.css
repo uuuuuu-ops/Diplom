@@ -115,6 +115,25 @@
 }
 .el-file-existing:hover { text-decoration: underline; }
 
+.el-url-or {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+.el-url-or span {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-style: italic;
+}
+.el-url-or hr {
+  flex: 1;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .el-secondary-btn {
   font-family: var(--font-mono);
   font-size: 0.85rem;

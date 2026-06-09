@@ -40,8 +40,10 @@ const StepPublish: React.FC<Props> = ({ draft, updateDraft, toast, onBack, onDon
         if (lesson.description) form.append('description', lesson.description);
         if (lesson.contentType === 'text' && lesson.text)
           form.append('lectureText', lesson.text);
-        if (lesson.contentType === 'video' && lesson.videoFile)
-          form.append('videoFile', lesson.videoFile);
+        if (lesson.contentType === 'video') {
+          if (lesson.videoFile) form.append('videoFile', lesson.videoFile);
+          else if (lesson.videoUrl) form.append('videoUrl', lesson.videoUrl);
+        }
         if (lesson.contentType === 'file' && lesson.pdfFile)
           form.append('lecturePdfFile', lesson.pdfFile);
         if (lesson.quiz.length > 0)

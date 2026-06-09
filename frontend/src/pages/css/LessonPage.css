@@ -1,4 +1,4 @@
-.lesson-page {
+﻿.lesson-page {
   min-height: 100vh;
   background: var(--bg-deep);
   color: var(--text-primary);
@@ -358,7 +358,7 @@
 }
 .lesson-comment.is-answer {
   border: 2px solid var(--accent);
-  background: rgba(var(--accent-rgb), 0.08);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 .lc-avatar {
   width: 38px;
