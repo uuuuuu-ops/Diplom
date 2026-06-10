@@ -2,6 +2,8 @@ package com.diploma.Diplom.service;
 
 import java.time.LocalDateTime;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.diploma.Diplom.dto.CertificateResponse;
@@ -18,6 +20,8 @@ import com.diploma.Diplom.util.CertificateUtils;
 
 @Service
 public class CertificateService {
+
+    private static final Logger log = LoggerFactory.getLogger(CertificateService.class);
 
     private final CertificateRepository certificateRepository;
     private final UserRepository userRepository;
@@ -65,9 +69,13 @@ public class CertificateService {
 
         Certificate saved = certificateRepository.save(certificate);
 
-        String pdfUrl = pdfCertificateService.generateCertificatePdf(saved);
-        saved.setPdfUrl(pdfUrl);
-        certificateRepository.save(saved);
+        try {
+            String pdfUrl = pdfCertificateService.generateCertificatePdf(saved);
+            saved.setPdfUrl(pdfUrl);
+            certificateRepository.save(saved);
+        } catch (Exception e) {
+            // PDF generation failed; certificate record is saved without pdfUrl
+        }
 
         courseProgressRepository.findFirstByUserIdAndCourseId(userId, courseId)
                 .ifPresent(progress -> {
@@ -127,5 +135,41 @@ public class CertificateService {
 
     public java.util.List<Certificate> getMyCertificates(String userId) {
         return certificateRepository.findByUserId(userId);
+    }
+
+    public CertificateResponse claimCertificate(String userId, String courseId) {
+        java.util.Optional<Certificate> existing = certificateRepository.findByUserIdAndCourseId(userId, courseId);
+
+        if (existing.isPresent()) {
+            Certificate cert = existing.get();
+            String pdfError = null;
+            if (cert.getPdfUrl() == null) {
+                try {
+                    String pdfUrl = pdfCertificateService.generateCertificatePdf(cert);
+                    cert.setPdfUrl(pdfUrl);
+                    certificateRepository.save(cert);
+                } catch (Exception e) {
+                    pdfError = e.getMessage();
+                    log.error("PDF regeneration failed for certificate {}: {}", cert.getId(), e.getMessage(), e);
+                }
+            }
+            String msg = cert.getPdfUrl() != null ? "Certificate retrieved"
+                    : "PDF generation failed: " + pdfError;
+            return new CertificateResponse(
+                    cert.getId(),
+                    cert.getCertificateNumber(),
+                    cert.getPdfUrl(),
+                    cert.getVerificationCode(),
+                    msg);
+        }
+
+        boolean completed = courseProgressRepository
+                .findFirstByUserIdAndCourseId(userId, courseId)
+                .map(com.diploma.Diplom.model.CourseProgress::isCompleted)
+                .orElse(false);
+        if (!completed) {
+            throw new com.diploma.Diplom.exception.ForbiddenException("Course is not yet completed");
+        }
+        return issueCertificate(userId, courseId);
     }
 }

@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿﻿﻿﻿﻿import axios from 'axios';
 
 export const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
@@ -257,6 +257,7 @@ export interface Certificate {
   courseTitle?: string;
   instructorName?: string;
   issuedAt: string;
+  certificateNumber?: string;
   verificationCode: string;
   pdfUrl?: string;
 }
@@ -272,6 +273,37 @@ export const issueCertificate = (userId: string, courseId: string) =>
   );
 export const regenerateCertificate = (id: string) =>
   api.post<Certificate>(`/api/certificates/${id}/regenerate`);
+export interface CertificateResponse {
+  id: string;
+  certificateNumber?: string;
+  pdfUrl?: string;
+  verificationCode: string;
+  message?: string;
+}
+export const claimCertificate = (courseId: string) =>
+  api.post<CertificateResponse>(`/api/certificates/claim?courseId=${encodeURIComponent(courseId)}`);
+
+export const downloadCertificatePdf = async (certificateId: string): Promise<void> => {
+  const certRes = await api.get<Certificate>(`/api/certificates/${certificateId}`);
+  const pdfUrl = certRes.data.pdfUrl;
+  if (!pdfUrl) throw new Error('Certificate PDF not yet available');
+  const filename = `certificate_${certRes.data.certificateNumber ?? certificateId}.pdf`;
+  try {
+    const response = await api.get(pdfUrl, { responseType: 'blob' });
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('Blob download failed, opening in new tab:', err);
+    window.open(API_BASE + pdfUrl, '_blank');
+  }
+};
 
 export interface AdminStats {
   totalUsers: number;

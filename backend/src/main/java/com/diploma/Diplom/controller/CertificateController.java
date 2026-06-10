@@ -70,6 +70,23 @@ public class CertificateController {
     }
 
     @Operation(
+        summary = "Claim certificate for a completed course",
+        description = "Returns the existing certificate if one exists, or issues a new one if the course is completed. Callable by the student themselves.",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Certificate returned or issued",
+                content = @Content(schema = @Schema(implementation = CertificateResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Course not completed", content = @Content)
+        }
+    )
+    @PostMapping("/claim")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<CertificateResponse> claimCertificate(
+            @Parameter(description = "Course ID") @RequestParam String courseId) {
+        String userId = securityUtils.getCurrentUserId();
+        return ResponseEntity.ok(certificateService.claimCertificate(userId, courseId));
+    }
+
+    @Operation(
         summary = "Get all certificates for the authenticated user",
         responses = @ApiResponse(responseCode = "200",
             content = @Content(array = @io.swagger.v3.oas.annotations.media.ArraySchema(

@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+﻿﻿﻿﻿import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { getCourseById, getLessonsByCourse, Course, Lesson } from '../api/courses';
-import { getCourseProgress, checkAccess, CourseProgress, getCourseRatings, rateCourse, deleteMyRating, CourseRating } from '../api';
+import { getCourseProgress, checkAccess, CourseProgress, getCourseRatings, rateCourse, deleteMyRating, CourseRating, downloadCertificatePdf, claimCertificate } from '../api';
 import { isAuthenticated } from '../api/auth';
 import './css/CourseLearningPage.css';
 
@@ -41,6 +41,7 @@ const CourseLearningPage: React.FC = () => {
   const [formStars, setFormStars] = useState(0);
   const [formReview, setFormReview] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [ratingMsg, setRatingMsg] = useState('');
 
   useEffect(() => {
@@ -112,6 +113,26 @@ const CourseLearningPage: React.FC = () => {
       setRatingMsg(err?.response?.data?.message || 'No rating to remove.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleGetCertificate = async () => {
+    if (!courseId) return;
+    setDownloading(true);
+    try {
+      const res = await claimCertificate(courseId);
+      const { id: certId, pdfUrl, message } = res.data;
+      if (!certId || !pdfUrl) {
+        console.error('Certificate pdfUrl is null. Server message:', message);
+        alert('Your certificate is still being prepared. Please try again in a few seconds.');
+        return;
+      }
+      await downloadCertificatePdf(certId);
+    } catch (err) {
+      console.error('Certificate claim/download failed:', err);
+      alert('Could not download the certificate. Please try again.');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -198,9 +219,10 @@ const CourseLearningPage: React.FC = () => {
             <div className="clp-sidebar-cert">
               <button
                 className="clp-sidebar-cert-btn"
-                onClick={() => navigate('/certificates')}
+                onClick={handleGetCertificate}
+                disabled={downloading}
               >
-                Get Certificate
+                {downloading ? 'Downloading…' : 'Get Certificate'}
               </button>
             </div>
           )}
@@ -256,8 +278,8 @@ const CourseLearningPage: React.FC = () => {
               <div className="clp-completed-badge">
                 ✓ Course completed!
                 {progress.certificateId && (
-                  <button className="clp-cert-btn" onClick={() => navigate('/certificates')}>
-                    View certificate
+                  <button className="clp-cert-btn" onClick={handleGetCertificate} disabled={downloading}>
+                    {downloading ? 'Downloading…' : 'Download Certificate'}
                   </button>
                 )}
               </div>

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { getMyCertificates, Certificate } from '../api';
+import { getMyCertificates, Certificate, downloadCertificatePdf } from '../api';
 import { isAuthenticated } from '../api/auth';
 import './css/CertificatePage.css';
 
@@ -58,14 +58,12 @@ const MyCertificatesPage: React.FC = () => {
                     View
                   </Link>
                   {cert.pdfUrl && (
-                    <a
+                    <button
                       className="cert-mini-btn"
-                      href={cert.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      onClick={() => downloadCertificatePdf(cert.id)}
                     >
                       Download PDF
-                    </a>
+                    </button>
                   )}
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿﻿﻿﻿﻿import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import {
@@ -18,6 +18,8 @@ import {
   CourseProgress,
   Quiz,
   API_BASE,
+  downloadCertificatePdf,
+  claimCertificate,
 } from '../api';
 import { isAuthenticated, getUserId } from '../api/auth';
 import './css/LessonPage.css';
@@ -155,9 +157,29 @@ const LessonPage: React.FC = () => {
   const [unlocked, setUnlocked] = useState(true);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
+
+  const handleGetCertificate = async () => {
+    if (!courseId) return;
+    setDownloading(true);
+    try {
+      const res = await claimCertificate(courseId);
+      const { id: certId, pdfUrl } = res.data;
+      if (!certId || !pdfUrl) {
+        alert('Your certificate is still being prepared. Please try again in a few seconds.');
+        return;
+      }
+      await downloadCertificatePdf(certId);
+    } catch (err) {
+      console.error('Certificate claim/download failed:', err);
+      alert('Could not download the certificate. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const isTeacher = (() => {
     try {
@@ -344,9 +366,10 @@ const LessonPage: React.FC = () => {
             <div className="clp-sidebar-cert">
               <button
                 className="clp-sidebar-cert-btn"
-                onClick={() => navigate('/certificates')}
+                onClick={handleGetCertificate}
+                disabled={downloading}
               >
-                Get Certificate
+                {downloading ? 'Downloading…' : 'Get Certificate'}
               </button>
             </div>
           )}
