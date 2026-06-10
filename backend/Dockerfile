@@ -10,4 +10,5 @@ WORKDIR /app
 RUN apk add --no-cache fontconfig ttf-dejavu && fc-cache -fv
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENV JAVA_OPTS="-Xmx400m -XX:MaxMetaspaceSize=180m -XX:+UseSerialGC"
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
