@@ -57,11 +57,11 @@ services:
           type: redis
           name: diplom-redis
           property: port
-      - key: SPRING_DATA_REDIS_PASSWORD
+      - key: SPRING_DATA_REDIS_URL
         fromService:
           type: redis
           name: diplom-redis
-          property: password
+          property: connectionString
 
       # RabbitMQ (CloudAMQP) - fill in with your CloudAMQP instance details
       - key: SPRING_RABBITMQ_HOST
