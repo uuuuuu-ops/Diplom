@@ -34,8 +34,8 @@ public class PdfCertificateService {
     @Value("${certificate.storage.path}")
     private String storagePath;
 
-    @Value("${app.base-url}")
-    private String baseUrl;
+    @Value("${app.frontend-base-url}")
+    private String frontendBaseUrl;
 
     public PdfCertificateService(TemplateEngine templateEngine, QrCodeService qrCodeService) {
         this.templateEngine = templateEngine;
@@ -49,7 +49,7 @@ public class PdfCertificateService {
                 folder.mkdirs();
             }
 
-            String verificationUrl = baseUrl + "/api/certificates/verify/" + certificate.getVerificationCode();
+            String verificationUrl = frontendBaseUrl + "/certificates/verify/" + certificate.getVerificationCode();
             String qrBase64 = qrCodeService.generateQrCodeBase64(verificationUrl, 200, 200);
 
             Map<String, Object> variables = new HashMap<>();
