@@ -5,12 +5,13 @@ import {
   createSubscription,
   confirmSubscription,
   enrollFree,
+  checkAccess,
 } from '../api';
 import { getCourseById, Course } from '../api/courses';
 import { isAuthenticated } from '../api/auth';
 import './css/CheckoutPage.css';
 
-type Step = 'choose' | 'redirect' | 'capturing' | 'success' | 'error';
+type Step = 'choose' | 'redirect' | 'capturing' | 'success' | 'error' | 'already-enrolled';
 
 const CheckoutPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +35,26 @@ const CheckoutPage: React.FC = () => {
       .catch(() => setCourse(null))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!id || !course) return;
+    if (params.get('subscription_id')) return;
+
+    if (course.free) {
+      // Free courses are accessible to everyone - enroll automatically so it
+      // shows up under "My courses" without an extra click.
+      enrollFree(id)
+        .then(() => setStep('already-enrolled'))
+        .catch(() => {});
+      return;
+    }
+
+    checkAccess(id)
+      .then((res) => {
+        if (res.data.hasAccess) setStep('already-enrolled');
+      })
+      .catch(() => {});
+  }, [id, course, params]);
 
   useEffect(() => {
     const subscriptionId = params.get('subscription_id');
@@ -154,6 +175,22 @@ const CheckoutPage: React.FC = () => {
               <div className="ck-spinner" />
               <h2>Confirming your subscription...</h2>
               <p>Hold on a moment.</p>
+            </div>
+          )}
+
+          {step === 'already-enrolled' && (
+            <div className="ck-state success">
+              <div className="ck-success-icon">✓</div>
+              <h2>You already have access</h2>
+              <p>You can continue learning <b>{course.title}</b> right away.</p>
+              <div className="ck-success-actions">
+                <button className="ck-pay-btn" onClick={() => navigate(`/courses/${course.id}/learn`)}>
+                  Start learning
+                </button>
+                <button className="ck-secondary-btn" onClick={() => navigate('/my-enrollments')}>
+                  My courses
+                </button>
+              </div>
             </div>
           )}
 

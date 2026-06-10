@@ -9,6 +9,7 @@ import com.diploma.Diplom.repository.UserRepository;
 import com.diploma.Diplom.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -50,7 +51,10 @@ public class SubscriptionService {
         return subscriptionRepository.save(subscription);
     }
 
-    @CacheEvict(value = "subscription", key = "#result.userId")
+    @Caching(evict = {
+            @CacheEvict(value = "subscription", key = "#result.userId"),
+            @CacheEvict(value = "access", allEntries = true)
+    })
     public Subscription activateSubscription(String paypalSubscriptionId) {
         Subscription subscription = getByPaypalSubscriptionId(paypalSubscriptionId);
         subscription.setStatus(SubscriptionStatus.ACTIVE);
@@ -70,7 +74,10 @@ public class SubscriptionService {
         return saved;
     }
 
-    @CacheEvict(value = "subscription", key = "#result.userId")
+    @Caching(evict = {
+            @CacheEvict(value = "subscription", key = "#result.userId"),
+            @CacheEvict(value = "access", allEntries = true)
+    })
     public Subscription cancelSubscription(String paypalSubscriptionId) {
         Subscription subscription = getByPaypalSubscriptionId(paypalSubscriptionId);
         subscription.setStatus(SubscriptionStatus.CANCELLED);

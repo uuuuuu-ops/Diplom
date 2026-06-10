@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import {
   getMyEnrollments,
   getCourseProgress,
+  confirmSubscription,
+  getMySubscriptions,
   Enrollment,
   CourseProgress,
 } from '../api';
-import { getCourseById, Course } from '../api/courses';
+import { getCourseById, getCourses, Course } from '../api/courses';
 import { isAuthenticated } from '../api/auth';
 import './css/MyEnrollmentsPage.css';
 
@@ -19,14 +21,35 @@ interface EnrollmentRow {
 
 const MyEnrollmentsPage: React.FC = () => {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
 
   const [rows, setRows] = useState<EnrollmentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'in-progress' | 'completed'>('all');
+  const [subStatus, setSubStatus] = useState<'idle' | 'confirming' | 'success' | 'error'>('idle');
+  const [subError, setSubError] = useState('');
 
   useEffect(() => {
     if (!isAuthenticated()) navigate('/login', { replace: true });
   }, [navigate]);
+
+  useEffect(() => {
+    const subscriptionId = params.get('subscription_id');
+    if (!subscriptionId) return;
+    setSubStatus('confirming');
+    confirmSubscription(subscriptionId)
+      .then(() => setSubStatus('success'))
+      .catch((err: any) => {
+        setSubError(err?.response?.data?.message || 'Could not confirm subscription.');
+        setSubStatus('error');
+      })
+      .finally(() => {
+        params.delete('subscription_id');
+        params.delete('token');
+        setParams(params, { replace: true });
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -47,7 +70,38 @@ const MyEnrollmentsPage: React.FC = () => {
             };
           })
         );
-        setRows(expanded);
+
+        // PRO subscribers get access to every subscription-required course
+        // without an Enrollment record - list those here too.
+        const subRes = await getMySubscriptions().catch(() => null);
+        const hasActiveSubscription = (subRes?.data || []).some((s) => s.status === 'ACTIVE');
+
+        let proRows: EnrollmentRow[] = [];
+        if (hasActiveSubscription) {
+          const enrolledCourseIds = new Set(enrollments.map((e) => e.courseId));
+          const coursesRes = await getCourses({ size: 100 }).catch(() => null);
+          const proCourses = (coursesRes?.data.content || []).filter(
+            (c) => c.free !== true && !enrolledCourseIds.has(c.id)
+          );
+          proRows = await Promise.all(
+            proCourses.map(async (c): Promise<EnrollmentRow> => {
+              const pRes = await getCourseProgress(c.id).catch(() => null);
+              return {
+                enrollment: {
+                  id: `sub-${c.id}`,
+                  userId: '',
+                  courseId: c.id,
+                  status: 'ACTIVE',
+                  enrolledAt: '',
+                },
+                course: c,
+                progress: pRes?.data || null,
+              };
+            })
+          );
+        }
+
+        setRows([...expanded, ...proRows]);
       } catch {
         setRows([]);
       } finally {
@@ -55,7 +109,7 @@ const MyEnrollmentsPage: React.FC = () => {
       }
     };
     fetchAll();
-  }, []);
+  }, [subStatus]);
 
   const filtered = rows.filter((r) => {
     if (filter === 'in-progress') return !r.progress?.completed;
@@ -71,6 +125,22 @@ const MyEnrollmentsPage: React.FC = () => {
       <Navbar />
 
       <div className="enr-container">
+        {subStatus === 'confirming' && (
+          <div className="enr-empty-card">
+            <p className="enr-empty">Confirming your subscription...</p>
+          </div>
+        )}
+        {subStatus === 'success' && (
+          <div className="enr-empty-card">
+            <p className="enr-empty">✓ Subscription activated! You now have full access to PRO courses.</p>
+          </div>
+        )}
+        {subStatus === 'error' && (
+          <div className="enr-empty-card">
+            <p className="enr-empty">{subError}</p>
+          </div>
+        )}
+
         <header className="enr-header">
           <h1>My learning</h1>
           <p className="enr-sub">
