@@ -24,7 +24,7 @@ services:
         value: admin@lms.com
 
       - key: APP_ALLOWED_ORIGINS
-        value: https://diplom-frontend.onrender.com
+        value: https://diplom-frontend-760v.onrender.com
 
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
@@ -86,9 +86,9 @@ services:
       - key: CERTIFICATE_STORAGE_PATH
         value: uploads/certificates
       - key: APP_BASE_URL
-        value: https://diplom-backend.onrender.com
+        value: https://diplom-backend-o6l7.onrender.com
       - key: FRONTEND_BASE_URL
-        value: https://diplom-frontend.onrender.com
+        value: https://diplom-frontend-760v.onrender.com
 
       - key: PAYPAL_CLIENT_ID
         sync: false
@@ -108,7 +108,7 @@ services:
       - key: GITHUB_CLIENT_SECRET
         sync: false
       - key: OAUTH2_REDIRECT_URI
-        value: https://diplom-frontend.onrender.com/oauth2/callback
+        value: https://diplom-frontend-760v.onrender.com/oauth2/callback
 
   # ===========================
   # AI resume-screening service (FastAPI)
@@ -131,7 +131,7 @@ services:
     dockerContext: ./frontend
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://diplom-backend.onrender.com
+        value: https://diplom-backend-o6l7.onrender.com
 
   # ===========================
   # Redis (Render managed Key Value)
