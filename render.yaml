@@ -1,0 +1,142 @@
+services:
+  # ===========================
+  # Backend (Spring Boot)
+  # ===========================
+  - type: web
+    name: diplom-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /courses/public
+    envVars:
+      - key: SPRING_DATA_MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRATION
+        value: "86400000"
+      - key: JWT_REFRESH_EXPIRATION
+        value: "60400000"
+      - key: APP_ADMIN_PASSWORD
+        sync: false
+      - key: APP_ADMIN_EMAIL
+        value: admin@lms.com
+
+      - key: APP_ALLOWED_ORIGINS
+        value: https://diplom-frontend.onrender.com
+
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+      - key: SPRING_MAIL_USERNAME
+        sync: false
+      - key: SPRING_MAIL_PASSWORD
+        sync: false
+      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH
+        value: "true"
+      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE
+        value: "true"
+      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED
+        value: "true"
+      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_TRUST
+        value: smtp.gmail.com
+
+      # Redis (Render managed Key Value)
+      - key: SPRING_DATA_REDIS_HOST
+        fromService:
+          type: redis
+          name: diplom-redis
+          property: host
+      - key: SPRING_DATA_REDIS_PORT
+        fromService:
+          type: redis
+          name: diplom-redis
+          property: port
+      - key: SPRING_DATA_REDIS_PASSWORD
+        fromService:
+          type: redis
+          name: diplom-redis
+          property: password
+
+      # RabbitMQ (CloudAMQP) - fill in with your CloudAMQP instance details
+      - key: SPRING_RABBITMQ_HOST
+        sync: false
+      - key: SPRING_RABBITMQ_PORT
+        value: "5671"
+      - key: SPRING_RABBITMQ_USERNAME
+        sync: false
+      - key: SPRING_RABBITMQ_PASSWORD
+        sync: false
+      - key: SPRING_RABBITMQ_VHOST
+        sync: false
+      - key: SPRING_RABBITMQ_SSL_ENABLED
+        value: "true"
+
+      # AI resume-screening service (private service, internal network)
+      - key: AI_RESUME_API_URL
+        value: http://diplom-ai-service:8000
+
+      - key: APP_UPLOAD_DIR
+        value: uploads
+      - key: CERTIFICATE_STORAGE_PATH
+        value: uploads/certificates
+      - key: APP_BASE_URL
+        value: https://diplom-backend.onrender.com
+      - key: FRONTEND_BASE_URL
+        value: https://diplom-frontend.onrender.com
+
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_BASE_URL
+        value: https://api-m.sandbox.paypal.com
+      - key: PAYPAL_SUBSCRIPTION_PLAN_ID
+        sync: false
+
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: OAUTH2_REDIRECT_URI
+        value: https://diplom-frontend.onrender.com/oauth2/callback
+
+  # ===========================
+  # AI resume-screening service (FastAPI, internal-only)
+  # ===========================
+  - type: pserv
+    name: diplom-ai-service
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/src/main/java/com/diploma/Diplom/Ai/Dockerfile
+    dockerContext: ./backend/src/main/java/com/diploma/Diplom/Ai
+
+  # ===========================
+  # Frontend (React + Vite, served via nginx)
+  # ===========================
+  - type: web
+    name: diplom-frontend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://diplom-backend.onrender.com
+
+  # ===========================
+  # Redis (Render managed Key Value)
+  # ===========================
+  - type: redis
+    name: diplom-redis
+    plan: free
+    ipAllowList: []
