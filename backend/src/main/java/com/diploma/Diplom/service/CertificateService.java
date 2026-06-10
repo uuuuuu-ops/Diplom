@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.diploma.Diplom.dto.CertificateResponse;
+import com.diploma.Diplom.exception.ForbiddenException;
 import com.diploma.Diplom.exception.ResourceNotFoundException;
 import com.diploma.Diplom.model.Certificate;
 import com.diploma.Diplom.model.Course;
@@ -50,7 +51,6 @@ public class CertificateService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
-        // Resolve real instructor name
         String instructorName = userRepository.findById(course.getTeacherId())
                 .map(User::getName)
                 .orElse("Course Instructor");
@@ -69,13 +69,9 @@ public class CertificateService {
 
         Certificate saved = certificateRepository.save(certificate);
 
-        try {
-            String pdfUrl = pdfCertificateService.generateCertificatePdf(saved);
-            saved.setPdfUrl(pdfUrl);
-            certificateRepository.save(saved);
-        } catch (Exception e) {
-            // PDF generation failed; certificate record is saved without pdfUrl
-        }
+        String pdfUrl = pdfCertificateService.generateCertificatePdf(saved);
+        saved.setPdfUrl(pdfUrl);
+        certificateRepository.save(saved);
 
         courseProgressRepository.findFirstByUserIdAndCourseId(userId, courseId)
                 .ifPresent(progress -> {
@@ -165,10 +161,10 @@ public class CertificateService {
 
         boolean completed = courseProgressRepository
                 .findFirstByUserIdAndCourseId(userId, courseId)
-                .map(com.diploma.Diplom.model.CourseProgress::isCompleted)
+                .map(CourseProgress::isCompleted)
                 .orElse(false);
         if (!completed) {
-            throw new com.diploma.Diplom.exception.ForbiddenException("Course is not yet completed");
+            throw new ForbiddenException("Course is not yet completed");
         }
         return issueCertificate(userId, courseId);
     }

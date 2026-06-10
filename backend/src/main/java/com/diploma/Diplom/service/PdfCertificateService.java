@@ -1,8 +1,7 @@
 package com.diploma.Diplom.service;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
@@ -30,25 +29,19 @@ public class PdfCertificateService {
 
     private final TemplateEngine templateEngine;
     private final QrCodeService qrCodeService;
-
-    @Value("${certificate.storage.path}")
-    private String storagePath;
+    private final CloudinaryService cloudinaryService;
 
     @Value("${app.frontend-base-url}")
     private String frontendBaseUrl;
 
-    public PdfCertificateService(TemplateEngine templateEngine, QrCodeService qrCodeService) {
+    public PdfCertificateService(TemplateEngine templateEngine, QrCodeService qrCodeService, CloudinaryService cloudinaryService) {
         this.templateEngine = templateEngine;
         this.qrCodeService = qrCodeService;
+        this.cloudinaryService = cloudinaryService;
     }
 
     public String generateCertificatePdf(Certificate certificate) {
         try {
-            File folder = new File(storagePath);
-            if (!folder.exists()) {
-                folder.mkdirs();
-            }
-
             String verificationUrl = frontendBaseUrl + "/certificates/verify/" + certificate.getVerificationCode();
             String qrBase64 = qrCodeService.generateQrCodeBase64(verificationUrl, 200, 200);
 
@@ -67,26 +60,24 @@ public class PdfCertificateService {
 
             String html = templateEngine.process("Certificate-template", context);
 
-            String fileName = "certificate_" + certificate.getId() + ".pdf";
-            File outputFile = new File(folder, fileName);
+            String fileName = "certificate_" + certificate.getId();
 
-            String baseUri = folder.toURI().toString();
-            try (FileOutputStream os = new FileOutputStream(outputFile)) {
-                PdfRendererBuilder builder = new PdfRendererBuilder();
-                builder.useFastMode();
-                // Return empty stream for external HTTP/HTTPS resources (Google Fonts CDN)
-                // so generation does not fail when the container has no internet access
-                FSStreamFactory emptyFactory = uri -> new FSStream() {
-                    @Override public InputStream getStream() { return new ByteArrayInputStream(new byte[0]); }
-                    @Override public Reader getReader() { return new StringReader(""); }
-                };
-                builder.useProtocolsStreamImplementation(emptyFactory, "http", "https");
-                builder.withHtmlContent(html, baseUri);
-                builder.toStream(os);
-                builder.run();
-            }
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            PdfRendererBuilder builder = new PdfRendererBuilder();
+            builder.useFastMode();
+            // Return empty stream for external HTTP/HTTPS resources (Google Fonts CDN)
+            // so generation does not fail when the container has no internet access
+            FSStreamFactory emptyFactory = uri -> new FSStream() {
+                @Override public InputStream getStream() { return new ByteArrayInputStream(new byte[0]); }
+                @Override public Reader getReader() { return new StringReader(""); }
+            };
+            builder.useProtocolsStreamImplementation(emptyFactory, "http", "https");
+            builder.withHtmlContent(html, null);
+            builder.toStream(os);
+            builder.run();
 
-            return "/" + storagePath + "/" + fileName;
+            CloudinaryService.FileUploadResult uploaded = cloudinaryService.uploadBytes(os.toByteArray(), fileName, "certificates");
+            return uploaded.getFileUrl();
         } catch (Exception e) {
             log.error("Failed to generate certificate PDF for certificate {}: {}", certificate.getId(), e.getMessage(), e);
             throw new InternalServerException("Failed to generate certificate PDF: " + e.getMessage());

@@ -138,9 +138,6 @@ app:
     dir: ${APP_UPLOAD_DIR:uploads}
   base-url: ${APP_BASE_URL:http://localhost:8080}
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
-  certificate:
-    storage:
-      path: ${CERTIFICATE_STORAGE_PATH:uploads/certificates}
 
 # =====================
 # SWAGGER (SPRINGDOC)

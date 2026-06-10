@@ -44,6 +44,31 @@ public class CloudinaryService {
         }
     }
 
+    @SuppressWarnings("rawtypes")
+    public FileUploadResult uploadBytes(byte[] data, String fileName, String folder) {
+        try {
+            Map uploadResult = cloudinary.uploader().upload(
+                data,
+                ObjectUtils.asMap(
+                    "folder", folder,
+                    "resource_type", "raw",
+                    "public_id", fileName,
+                    "overwrite", true
+                )
+            );
+
+            FileUploadResult result = new FileUploadResult();
+            result.setFileUrl((String) uploadResult.get("secure_url"));
+            result.setPublicId((String) uploadResult.get("public_id"));
+            result.setFileName(fileName);
+
+            return result;
+
+        } catch (IOException e) {
+            throw new InternalServerException("Cloudinary upload failed: " + e.getMessage());
+        }
+    }
+
     public void deleteFile(String publicId) {
     if (publicId == null || publicId.isBlank()) return;
 

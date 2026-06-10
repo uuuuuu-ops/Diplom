@@ -91,8 +91,6 @@ services:
 
       - key: APP_UPLOAD_DIR
         value: uploads
-      - key: CERTIFICATE_STORAGE_PATH
-        value: uploads/certificates
       - key: APP_BASE_URL
         value: https://diplom-backend-o6l7.onrender.com
       - key: FRONTEND_BASE_URL
