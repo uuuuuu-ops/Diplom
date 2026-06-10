@@ -46,6 +46,14 @@ services:
       - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_TRUST
         value: smtp.gmail.com
 
+      # Brevo (transactional email API, used instead of SMTP - Render blocks outbound SMTP)
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        sync: false
+      - key: BREVO_SENDER_NAME
+        value: CouTeach
+
       # Redis (Render managed Key Value)
       - key: SPRING_DATA_REDIS_HOST
         fromService:

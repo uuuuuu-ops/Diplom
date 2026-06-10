@@ -114,6 +114,14 @@ cloudinary:
   api-secret: ${CLOUDINARY_API_SECRET}
 
 # =====================
+# BREVO (transactional email API)
+# =====================
+brevo:
+  api-key: ${BREVO_API_KEY}
+  sender-email: ${BREVO_SENDER_EMAIL}
+  sender-name: ${BREVO_SENDER_NAME:CouTeach}
+
+# =====================
 # PAYPAL
 # =====================
 paypal:
