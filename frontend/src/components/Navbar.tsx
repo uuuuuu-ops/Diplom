@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { isAuthenticated, logout, clearToken } from '../api/auth';
+import { isAuthenticated, logout, clearToken, getUserRole } from '../api/auth';
 import { getProfile, UserProfile } from '../api/profile';
 import { useTheme } from '../context/ThemeContext';
 import './Navbar.css';
@@ -92,6 +92,11 @@ const Navbar: React.FC = () => {
                     <Link to="/my-enrollments" className="nav-dropdown-item" onClick={() => setDropdownOpen(false)}>
                       My Courses
                     </Link>
+                    {getUserRole() === 'ADMIN' && (
+                      <Link to="/admin" className="nav-dropdown-item" onClick={() => setDropdownOpen(false)}>
+                        Admin Panel
+                      </Link>
+                    )}
                     <button className="nav-dropdown-item nav-dropdown-logout" onClick={handleLogout}>
                       Log Out
                     </button>

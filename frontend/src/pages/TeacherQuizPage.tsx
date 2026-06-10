@@ -8,6 +8,7 @@ import {
   TeacherQuizQuestion,
   TeacherQuizAttempt,
 } from '../api';
+import { getMyApplication } from '../api/profile';
 import { isAuthenticated } from '../api/auth';
 import './css/TeacherQuizPage.css';
 
@@ -20,6 +21,7 @@ const TeacherQuizPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<TeacherQuizAttempt | null>(null);
+  const [aiScore, setAiScore] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated()) navigate('/login', { replace: true });
@@ -31,19 +33,23 @@ const TeacherQuizPage: React.FC = () => {
     Promise.allSettled([
       getTeacherQuizQuestions(applicationId),
       getTeacherQuizResult(applicationId),
-    ]).then(([qRes, rRes]) => {
+      getMyApplication(),
+    ]).then(([qRes, rRes, aRes]) => {
       setQuestions(
         qRes.status === 'fulfilled' && qRes.value.data?.length
           ? qRes.value.data
           : []
       );
       if (rRes.status === 'fulfilled' && rRes.value.data) setResult(rRes.value.data);
+      if (aRes.status === 'fulfilled' && typeof aRes.value.data?.score === 'number') {
+        setAiScore(aRes.value.data.score);
+      }
       setLoading(false);
     });
   }, [applicationId]);
 
-  const handleSelect = (qIdx: number, optIdx: number) => {
-    setAnswers((prev) => ({ ...prev, [String(qIdx)]: optIdx }));
+  const handleSelect = (questionId: string, optIdx: number) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: optIdx }));
   };
 
   const handleSubmit = async () => {
@@ -59,7 +65,7 @@ const TeacherQuizPage: React.FC = () => {
     }
   };
 
-  const allAnswered = questions.length > 0 && questions.every((_, i) => answers[String(i)] !== undefined);
+  const allAnswered = questions.length > 0 && questions.every((q) => answers[q.id] !== undefined);
 
   if (loading) {
     return (
@@ -79,7 +85,18 @@ const TeacherQuizPage: React.FC = () => {
             {result.passed ? '✓' : '✕'}
           </div>
           <h1>{result.passed ? 'You passed' : 'Not passed'}</h1>
-          <p className="tquiz-result-score">{result.score}%</p>
+          <div className="tquiz-result-scores">
+            <div className="tquiz-result-score-item">
+              <span className="tquiz-result-score-label">Quiz score</span>
+              <span className="tquiz-result-score">{result.score}%</span>
+            </div>
+            {aiScore !== null && (
+              <div className="tquiz-result-score-item">
+                <span className="tquiz-result-score-label">AI resume score</span>
+                <span className="tquiz-result-score">{aiScore}%</span>
+              </div>
+            )}
+          </div>
           <p className="tquiz-result-meta">
             Your application will now move to the human review stage. We'll email you with a decision.
           </p>
@@ -108,21 +125,21 @@ const TeacherQuizPage: React.FC = () => {
 
         <div className="tquiz-questions">
           {questions.map((q, i) => (
-            <div key={i} className="tquiz-card">
+            <div key={q.id} className="tquiz-card">
               <p className="tquiz-q">
-                <span className="tquiz-num">{i + 1}.</span> {q.questionText}
+                <span className="tquiz-num">{i + 1}.</span> {q.question}
               </p>
               <div className="tquiz-options">
                 {q.options.map((opt, oi) => (
                   <label
                     key={oi}
-                    className={`tquiz-option ${answers[String(i)] === oi ? 'selected' : ''}`}
+                    className={`tquiz-option ${answers[q.id] === oi ? 'selected' : ''}`}
                   >
                     <input
                       type="radio"
-                      name={`tq-${i}`}
-                      checked={answers[String(i)] === oi}
-                      onChange={() => handleSelect(i, oi)}
+                      name={`tq-${q.id}`}
+                      checked={answers[q.id] === oi}
+                      onChange={() => handleSelect(q.id, oi)}
                     />
                     <span>{opt}</span>
                   </label>

@@ -78,6 +78,21 @@ public class TeacherApplicationController {
     }
 
     @Operation(
+        summary = "Get my teacher application",
+        description = "Returns the authenticated user's own teacher application, including AI score and quiz score.",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Application found",
+                content = @Content(schema = @Schema(implementation = TeacherApplication.class))),
+            @ApiResponse(responseCode = "404", description = "No application found", content = @Content)
+        }
+    )
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public TeacherApplication getMyApplication(Principal principal) {
+        return teacherApplicationService.getMyApplication(principal.getName());
+    }
+
+    @Operation(
         summary = "Get all applications (ADMIN)",
         responses = @ApiResponse(responseCode = "200",
             content = @Content(array = @ArraySchema(schema = @Schema(implementation = TeacherApplication.class))))

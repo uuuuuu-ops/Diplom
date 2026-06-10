@@ -148,6 +148,25 @@
   font-family: var(--font-mono);
   font-size: 1.5rem;
 }
+.tquiz-result-scores {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.tquiz-result-score-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+.tquiz-result-score-label {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 .tquiz-result-score {
   font-family: var(--font-mono);
   font-size: 3rem;

@@ -5,7 +5,7 @@ import { submitTeacherApplication } from '../api/profile';
 import './css/TeacherApplicationPage.css';
 const CATEGORIES = ['Programming', 'Mathematics', 'Physics', 'Sciences'];
 
-type Step = 'form' | 'submitting' | 'success' | 'error';
+type Step = 'form' | 'submitting' | 'error';
 
 const Field: React.FC<{
   label: string;
@@ -75,14 +75,14 @@ const TeacherApplicationPage: React.FC = () => {
 
     setStep('submitting');
     try {
-      await submitTeacherApplication({
+      const res = await submitTeacherApplication({
         fullName: fullName.trim(),
         email: email.trim(),
         specialization: specialization.trim(),
         yearsOfExperience: parseInt(yearsOfExperience, 10),
         resumeFile: resumeFile!,
       });
-      setStep('success');
+      navigate(`/teacher-apply/${res.data.id}/quiz`);
     } catch (err: any) {
       const msg =
         err.response?.data?.message ||
@@ -102,29 +102,6 @@ const TeacherApplicationPage: React.FC = () => {
             <div className="tap-spinner" />
             <p className="tap-status-title">Submitting your application…</p>
             <p className="tap-status-sub">Your resume is being uploaded and analysed by AI. This may take a few seconds.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (step === 'success') {
-    return (
-      <div className="tap-page">
-        <Navbar />
-        <div className="tap-center-wrap">
-          <div className="tap-status-card">
-            <div className="tap-success-icon">✓</div>
-            <p className="tap-status-title">Application Submitted!</p>
-            <p className="tap-status-sub">
-              Your resume has been received and is now under review. Our team and AI screening
-              system will evaluate your application. You'll hear back via email.
-            </p>
-            <div className="tap-success-actions">
-              <button className="tap-btn-primary" onClick={() => navigate('/profile')}>
-                Back to Profile
-              </button>
-            </div>
           </div>
         </div>
       </div>

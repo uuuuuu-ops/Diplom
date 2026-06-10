@@ -41,7 +41,7 @@ public class TeacherQuizController {
                 content = @Content)
         }
     )
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{applicationId}/questions")
     public ResponseEntity<List<TeacherQuizQuestion>> getQuestions(
             @Parameter(description = "Teacher application ID") @PathVariable String applicationId) {
@@ -75,7 +75,7 @@ public class TeacherQuizController {
                 content = @Content)
         }
     )
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/{applicationId}/submit")
     public ResponseEntity<TeacherQuizAttempt> submitQuiz(
             @Parameter(description = "Teacher application ID") @PathVariable String applicationId,
@@ -97,7 +97,7 @@ public class TeacherQuizController {
                 content = @Content)
         }
     )
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{applicationId}/result")
     public ResponseEntity<TeacherQuizAttempt> getResult(
             @Parameter(description = "Teacher application ID") @PathVariable String applicationId) {

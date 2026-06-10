@@ -362,9 +362,11 @@ export const rejectApplication = (applicationId: string, comment?: string) =>
   );
 
 export interface TeacherQuizQuestion {
-  id?: string;
-  questionText: string;
+  id: string;
+  topic?: string;
+  question: string;
   options: string[];
+  explanation?: string;
 }
 export interface TeacherQuizAttempt {
   id: string;
@@ -372,7 +374,7 @@ export interface TeacherQuizAttempt {
   applicationId: string;
   score: number;
   passed: boolean;
-  submittedAt?: string;
+  takenAt?: string;
 }
 export const getTeacherQuizQuestions = (applicationId: string) =>
   api.get<TeacherQuizQuestion[]>(`/teacher-applications/${applicationId}/questions`);

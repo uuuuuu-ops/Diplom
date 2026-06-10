@@ -153,14 +153,7 @@ public class TeacherApplicationService {
     }
 
     public TeacherApplication getMyApplication(String userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        if (user.getRole() != Role.TEACHER) {
-            throw new ForbiddenException("Only teachers can view teacher application status");
-        }
-
-        return teacherApplicationRepository.findByUserId(user.getId())
+        return teacherApplicationRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
     }
 }
