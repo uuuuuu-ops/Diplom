@@ -77,9 +77,9 @@ services:
       - key: SPRING_RABBITMQ_SSL_ENABLED
         value: "true"
 
-      # AI resume-screening service (private service, internal network)
+      # AI resume-screening service
       - key: AI_RESUME_API_URL
-        value: http://diplom-ai-service:8000
+        value: https://diplom-ai-service.onrender.com
 
       - key: APP_UPLOAD_DIR
         value: uploads
@@ -111,9 +111,9 @@ services:
         value: https://diplom-frontend.onrender.com/oauth2/callback
 
   # ===========================
-  # AI resume-screening service (FastAPI, internal-only)
+  # AI resume-screening service (FastAPI)
   # ===========================
-  - type: pserv
+  - type: web
     name: diplom-ai-service
     runtime: docker
     plan: free
