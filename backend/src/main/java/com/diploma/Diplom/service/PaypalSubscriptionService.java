@@ -37,8 +37,8 @@ public class PaypalSubscriptionService {
     @Value("${paypal.plan-id}")
     private String planId;
 
-    @Value("${app.base-url}")
-    private String appBaseUrl;
+    @Value("${app.frontend-base-url}")
+    private String frontendBaseUrl;
 
     public PaypalSubscriptionService(RestTemplate restTemplate,
                                      SubscriptionService subscriptionService,
@@ -86,9 +86,10 @@ public class PaypalSubscriptionService {
 
         Map<String, Object> context = new HashMap<>();
         context.put("brand_name", "Diploma App");
-        // Use configurable base URL, not hardcoded localhost
-        context.put("return_url", appBaseUrl + "/subscriptions/paypal/confirm");
-        context.put("cancel_url", appBaseUrl + "/subscriptions/paypal/cancel");
+        // PayPal redirects the browser here, appending subscription_id (and token) as query params.
+        // It must point to a frontend route, not a backend API endpoint.
+        context.put("return_url", frontendBaseUrl + "/my-enrollments");
+        context.put("cancel_url", frontendBaseUrl + "/my-enrollments");
         body.put("application_context", context);
 
         ResponseEntity<PayPalSubscriptionResponse> response = restTemplate.exchange(
