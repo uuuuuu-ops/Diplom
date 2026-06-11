@@ -67,7 +67,6 @@ const Navbar: React.FC = () => {
         </button>
         {!isAuth && (
           <>
-            <span className="nav-lang">Eng</span>
             {loggedIn ? (
               <div className="nav-user-menu" ref={dropdownRef}>
                 <button
